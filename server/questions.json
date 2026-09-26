@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "question": "In 2014, Tinder made its first match on which continent?",
+    "real_answer": "Antarctica"
+  },
+  {
+    "id": 2,
+    "question": "What is the official state toy of Pennsylvania?",
+    "real_answer": "Slinky"
+  },
+  {
+    "id": 3,
+    "question": "What unusual ingredient did ancient Romans use as mouthwash?",
+    "real_answer": "Urine"
+  }
+]
