@@ -1,0 +1,7 @@
+# Bluff Trivia Game — backend dependencies
+# Install inside your venv:  pip install -r requirements.txt
+
+fastapi~=0.141.1           # web server + health-check route
+uvicorn[standard]~=0.54.0  # runs the app, includes WebSocket support
+python-socketio~=5.17.0    # rooms, broadcast, reconnects (pairs with socket.io-client)
+python-dotenv~=1.2.3       # loads .env settings (e.g. allowed frontend URL)
