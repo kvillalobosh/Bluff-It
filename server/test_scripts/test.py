@@ -11,17 +11,28 @@ host = socketio.AsyncClient()
 p1 = socketio.AsyncClient()
 p2 = socketio.AsyncClient()
 
+
 # Listeners to log broadcasts
 @host.on("state:update")
 def on_host_update(data):
-    print(f"\n[HOST SCREEN UPDATE] Phase: {data.get('phase')} | Q: {data.get('question')}")
+    print(f"\n[HOST SCREEN UPDATE] Phase: {data.get('phase')} | Round: {data.get('round')} | Q: {data.get('question')}")
     print(f"  Players: {[p['name'] for p in data.get('players', {}).values()]}")
     if data.get("choices"):
         print(f"  Voting Choices: {data.get('choices')}")
+    if data.get("phase") == "results":
+        print(f"  [HOST SCREEN RESULTS] Real Answer: {data.get('real_answer')}")
+        print(f"  [HOST SCREEN RESULTS] Votes: {data.get('round_votes')}")
+    if data.get("phase") == "leaderboard_view":
+        for p in data.get("players", {}).values():
+            print(f"    - {p['name']}: {p['score']} pts")
+    if data.get("phase") == "end_screen":
+        print("  [HOST SCREEN] GAME OVER! Final scores would be displayed here.")
+
 
 @p1.on("state:update")
 def on_p1_update(data):
-    print(f"[P1 PHONE] Received phase: {data.get('phase')}")
+    print(f"[P1 PHONE] Received phase: {data.get('phase')} (Round {data.get('round')})")
+
 
 # quick test, mock game with players joining
 async def run_test():
@@ -32,7 +43,7 @@ async def run_test():
 
     server_process = subprocess.Popen([sys.executable, "-m", "uvicorn", "main:socket_app", "--port", "8000"],
                                       cwd=server_cwd)
-    await asyncio.sleep(2) # Give the server a moment to start up
+    await asyncio.sleep(2)  # Give the server a moment to start up
 
     try:
         # 1. Connect all sockets
@@ -54,19 +65,46 @@ async def run_test():
         dup_res = await p2.call("player:join_room", {"code": code, "name": "Alice"})
         print(f"Duplicate rejection test (should be False): {dup_res.get('success')}")
 
-        # 4. Host starts game and moves to staging
+        # 4. Host starts game (initializes to leaderboard_view, round 1)
         await host.call("host:start_game", {"code": code})
         await asyncio.sleep(0.5)
-        await host.call("host:begin_question_staging", {"code": code})
-        await asyncio.sleep(0.5)
 
-        # 5. Players submit fake answers (tests auto-advance to voting)
-        print("\n--- Submitting Player Answers ---")
-        await p1.call("player:answer_created", {"code": code, "answer": "Fake answer from Alice"})
-        await asyncio.sleep(0.5)
-        await p2.call("player:answer_created", {"code": code, "answer": "Fake answer from Bob"})
+        # 5. Play through 5 rounds!
+        for round_num in range(1, 6):
+            print(f"\n=================== STARTING ROUND {round_num} ===================")
 
-        # Wait 1 second to observe the transition_to_vote trigger
+            # If it's round 2 or later, we need to call next_round to advance from the previous results
+            if round_num > 1:
+                await host.call("host:next_round", {"code": code})
+                await asyncio.sleep(0.5)
+
+            # Host advances from leaderboard to question staging
+            await host.call("host:begin_question_staging", {"code": code})
+            await asyncio.sleep(0.5)
+
+            # Players submit unique fake answers for this round
+            print(f"\n--- Submitting Player Answers (Round {round_num}) ---")
+            alice_bluff = f"Alice bluff {round_num}"
+            bob_bluff = f"Bob bluff {round_num}"
+
+            await p1.call("player:answer_created", {"code": code, "answer": alice_bluff})
+            await asyncio.sleep(0.5)
+            await p2.call("player:answer_created", {"code": code, "answer": bob_bluff})
+
+            # Wait 1 second to observe the transition_to_vote trigger
+            await asyncio.sleep(1)
+
+            # Players submit votes (voting for each other's bluffs)
+            print(f"\n--- Submitting Player Votes (Round {round_num}) ---")
+            await p1.call("player:submit_vote", {"code": code, "choice": bob_bluff})
+            await p2.call("player:submit_vote", {"code": code, "choice": alice_bluff})
+
+            # Wait 1 second to observe the transition_to_results trigger
+            await asyncio.sleep(2)
+
+        # 6. Game finishes, host clicks next round which should trigger the "end_screen"
+        print("\n=================== ENDING GAME ===================")
+        await host.call("host:next_round", {"code": code})
         await asyncio.sleep(1)
 
         # Clean disconnect
@@ -75,9 +113,10 @@ async def run_test():
         await p2.disconnect()
         print("\n--- Test Completed Successfully ---")
     finally:
-    # Forcefully shut down the background server to free the port
+        # Forcefully shut down the background server to free the port
         server_process.kill()
         server_process.wait()
+
 
 if __name__ == "__main__":
     asyncio.run(run_test())

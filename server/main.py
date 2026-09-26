@@ -22,17 +22,19 @@ rooms[code] = {
     "phase": "lobby",
     "round": 1,
     "players": {
-        "id": sid,
-        "name": name,
-        "score": 0,
-        "connected": True,
-        "has_submitted": False
+        sid: {
+            "id": sid
+            "name": name,
+            "score": 0,
+            "connected": True
+        }
     },
     # Round-specific server data
     "current_question": None,     # Dict loaded from questions.json
     "round_answers": {},          # Key: sid Value: "Fake answer text"
-    "round_votes": {},            # Key: sid Value: choice_id
-    "shuffled_choices": []        # List of options displayed during voting
+    "round_votes": {},            # Key: sid Value: vote_choice
+    "shuffled_choices": [],        # List of options displayed during voting
+    "timer_task":
 }
 """
 
@@ -77,10 +79,19 @@ def get_public_room_state(room: dict) -> dict:
     Strips out sensitive server-only data (like real_answer and who wrote what)
     so clients only see what they are allowed to see for the current phase.
     """
+    # Create a fresh copy of the players dict and inject submission statuses
+    safe_players_copy = {}
+    for sid, player in room["players"].items():
+        safe_player = player.copy()
+        # Check if their socket ID exists in the answers/votes dicts
+        safe_player["has_answered"] = sid in room.get("round_answers", {})
+        safe_player["has_voted"] = sid in room.get("round_votes", {})
+        safe_players_copy[sid] = safe_player
+
     public_state = {
         "phase": room["phase"],
         "round": room.get("round", 1),
-        "players": room["players"],
+        "players": safe_players_copy,
         "question": None,
         "choices": room.get("shuffled_choices", []),
     }
@@ -88,6 +99,12 @@ def get_public_room_state(room: dict) -> dict:
     # Only expose the prompt string, never real_answer or author mappings
     if room.get("current_question"):
         public_state["question"] = room["current_question"]["question"]
+
+        # If we are in the results phase, it's safe to reveal the answers and votes!
+        if room["phase"] == "results":
+            public_state["real_answer"] = room["current_question"]["real_answer"]
+            public_state["round_answers"] = room.get("round_answers", {})
+            public_state["round_votes"] = room.get("round_votes", {})
 
     return public_state
 
@@ -98,10 +115,10 @@ async def transition_to_vote(code: str):
     room = rooms[code]
 
     # Guard: prevent running twice if timer and last submission hit at the same second
-    if room["phase"] == "vote":
+    if room["phase"] == "question_voting":
         return
 
-    room["phase"] = "vote"
+    room["phase"] = "question_voting"
 
     # 1. Collect all choices: the real answer + whatever fake answers were submitted
     all_choices = [room["current_question"]["real_answer"]]
@@ -119,6 +136,11 @@ async def transition_to_vote(code: str):
     public_state = get_public_room_state(room)
     await sio.emit("state:update", public_state, room=code)
 
+    # 5. Start the voting timer
+    if room.get("timer_task"):
+        room["timer_task"].cancel()
+    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=30))
+
 # timer for question staging
 async def write_phase_timer(code: str, seconds: int = 45):
     try:
@@ -129,6 +151,45 @@ async def write_phase_timer(code: str, seconds: int = 45):
     except asyncio.CancelledError:
         # Timer was stopped early because all players submitted!
         pass
+
+# timer for question answering
+async def vote_phase_timer(code: str, seconds: int = 30):
+    try:
+        # Sleep for the duration of the question (e.g., 30s)
+        await asyncio.sleep(seconds)
+        # If not canceled, time ran out -> advance to results page
+        await transition_to_results(code)
+    except asyncio.CancelledError:
+        # Timer was stopped early because all players submitted!
+        pass
+
+# go from voting to results
+async def transition_to_results(code: str):
+    if code not in rooms:
+        return
+    room = rooms[code]
+
+    if room["phase"] == "results":
+        return
+    room["phase"] = "results"
+
+    # award points
+    real_answer = room["current_question"]["real_answer"]
+    for voter_sid, vote_choice in room.get("round_votes", {}).items():
+        if vote_choice == real_answer:
+            # Player voted for the correct answer
+            room["players"][voter_sid]["score"] += 1000
+        else:
+            # Player voted for a fake answer, find the answer owner and award 500
+            for author_sid, answer_text in room.get("round_answers", {}).items():
+                if answer_text == vote_choice:
+                    if author_sid in room["players"]:
+                        room["players"][author_sid]["score"] += 500
+                    break # found the author, no need to keep looping
+
+    # Broadcast the new phase
+    public_state = get_public_room_state(room)
+    await sio.emit("state:update", public_state, room=code)
 
 # user hits "host game" and client broadcasts "host:create" signal
 # server creates the room, adds it to rooms, and returns the code generated to the "host" client
@@ -202,7 +263,6 @@ async def handle_join_room(sid, data: dict):
         "name": name,
         "score": 0,
         "connected": True,
-        "has_submitted": False
     }
 
     # broadcast sanitized updated room state to all devices in the room
@@ -283,28 +343,126 @@ async def handle_answer_creation(sid, data: dict):
     if not answer_text:
         return {"success": False, "error": "Answer cannot be blank."}
 
+    # 3a. Guard: Answer cannot match real_answer
+    if answer_text.lower() == room["current_question"]["real_answer"].lower():
+        return {"success": False, "error": "Answer has to be fake. Get creative!"}
+
     # 4. Guard: One submission per round
     if sid in room["round_answers"]:
         return {"success": False, "error": "You have already submitted an answer."}
 
     # 5. Save the answer privately on the server
     room["round_answers"][sid] = answer_text
-    player["has_submitted"] = True
 
     # 6. Inform everyone that a player has locked in (without leaking text)
     public_state = get_public_room_state(room)
     await sio.emit("state:update", public_state, room=code)
 
-    # 7. Auto-advance if every registered player has submitted
-    if len(room["round_answers"]) >= len(room["players"]):
-        # Auto-advance if every registered player has submitted
-        if len(room["round_answers"]) >= len(room["players"]):
-            # 1. Cancel the ticking background timer so it doesn't fire later
-            if room.get("timer_task"):
-                room["timer_task"].cancel()
-                room["timer_task"] = None
+    # 7. Auto-advance if every active player has submitted
+    active_players_count = sum(1 for p in room["players"].values() if p.get("connected"))
+    if len(room["round_answers"]) >= active_players_count:
+        # 1. Cancel the ticking background timer so it doesn't fire later
+        if room.get("timer_task"):
+            room["timer_task"].cancel()
+            room["timer_task"] = None
 
-            # 2. Advance to vote immediately
-            await transition_to_vote(code)
+        # 2. Advance to vote immediately
+        await transition_to_vote(code)
 
     return {"success": True}
+
+@sio.on("player:submit_vote")
+async def handle_submit_vote(sid, data: dict):
+    code = data.get("code", "").upper().strip()
+    vote_choice = data.get("choice")
+
+    # 1. Validate room and player
+    room, player, error = get_room_or_error_player(code, player_sid=sid)
+    if error:
+        return error
+
+    # 2. Guard: Must be in the voting phase
+    if room.get("phase") != "question_voting":
+        return {"success": False, "error": "Voting is closed."}
+
+    # 3. Guard: One vote per round
+    if sid in room["round_votes"]:
+        return {"success": False, "error": "You have already voted."}
+
+    # 4. Guard: Ensure they are voting for an actual choice
+    if vote_choice not in room["shuffled_choices"]:
+        return {"success": False, "error": "Invalid choice."}
+
+    # 5. Save the vote privately on the server
+    room["round_votes"][sid] = vote_choice
+
+    # 6. Optional: update clients so they know someone locked in
+    public_state = get_public_room_state(room)
+    await sio.emit("state:update", public_state, room=code)
+
+    # 7. Auto-advance if every active player has voted
+    active_players_count = sum(1 for p in room["players"].values() if p.get("connected"))
+    if len(room["round_votes"]) >= active_players_count:
+        if room.get("timer_task"):
+            room["timer_task"].cancel()
+            room["timer_task"] = None
+        await transition_to_results(code)
+
+    return {"success": True}
+
+@sio.on("host:next_round")
+async def handle_start_next_round(sid, data:dict):
+    code = data.get("code", "").upper().strip()
+
+    # validate room existence and host status
+    room, error = get_room_or_error_host(code, host_sid=sid)
+    if error:
+        return error
+
+    # update the state machine
+    room["round"] += 1
+
+    # check if we reached the end of the game (five rounds)
+    if room["round"] > 5:
+        room["phase"] = "end_screen"
+    else:
+        room["phase"] = "leaderboard_view"
+        room["current_question"] = None
+        room["round_answers"] = {}
+        room["round_votes"] = {}
+        room["shuffled_choices"] = []
+
+    # broadcast updated state
+    public_state = get_public_room_state(room)
+    await sio.emit("state:update", public_state, room=code)
+
+    return {"success": True}
+
+@sio.on("disconnect")
+async def handle_disconnect(sid):
+    # Find if this sid belongs to any room and mark them as disconnected
+    for code, room in rooms.items():
+        if sid in room["players"]:
+            room["players"][sid]["connected"] = False
+            print(f"Player {sid} disconnected from room {code}")
+            
+            # Broadcast state so the host screen can gray out their avatar
+            public_state = get_public_room_state(room)
+            await sio.emit("state:update", public_state, room=code)
+            
+            # Trigger auto-advance checks in case we were just waiting on this one disconnected player!
+            active_players_count = sum(1 for p in room["players"].values() if p.get("connected"))
+            
+            if room["phase"] in ("write", "question_staging") and len(room["round_answers"]) >= active_players_count and active_players_count > 0:
+                if room.get("timer_task"):
+                    room["timer_task"].cancel()
+                    room["timer_task"] = None
+                await transition_to_vote(code)
+                
+            elif room["phase"] == "question_voting" and len(room["round_votes"]) >= active_players_count and active_players_count > 0:
+                if room.get("timer_task"):
+                    room["timer_task"].cancel()
+                    room["timer_task"] = None
+                await transition_to_results(code)
+            
+            break # Found the player, no need to keep checking other rooms
