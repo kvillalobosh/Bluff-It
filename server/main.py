@@ -231,6 +231,7 @@ async def handle_join_room(sid, data: dict):
     # get the room code and nickname
     code = data.get("code", "").upper().strip()
     name = data.get("name", "").strip()
+    avatar = data.get("name", "").strip()
 
     # validation checks
     if not code or not name:
@@ -238,6 +239,10 @@ async def handle_join_room(sid, data: dict):
     if code not in rooms:
         return {"success": False, "error": "Code not found."}
     room = rooms[code]
+
+    # room cap validation
+    if len(room["players"]) > 8:
+        return {"success": False, "error": "Room capacity reached."}
 
     # room phase validation
     if room["phase"] != "lobby":
@@ -261,6 +266,7 @@ async def handle_join_room(sid, data: dict):
     room["players"][sid] = {
         "id": sid,
         "name": name,
+        "avatar": avatar,
         "score": 0,
         "connected": True,
     }
