@@ -27,6 +27,7 @@ export type RoomState = {
   players: Record<string, Player> // keyed by sid
   question: string | null
   choices: string[]
+  deadline: number | null // unix seconds when the current phase's timer ends (write / vote)
   // Only sent during "results"
   real_answer?: string
   round_answers?: Record<string, string> // sid -> fake text

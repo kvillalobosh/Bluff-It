@@ -4,6 +4,7 @@ import string
 import socketio
 from questions import get_random_question
 import asyncio
+import time
 
 # Create the Socket.IO async server
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
@@ -94,6 +95,8 @@ def get_public_room_state(room: dict) -> dict:
         "players": safe_players_copy,
         "question": None,
         "choices": room.get("shuffled_choices", []),
+        # Unix timestamp (seconds) when the current phase's timer runs out, so clients can show a countdown
+        "deadline": room.get("deadline"),
     }
 
     # Only expose the prompt string, never real_answer or author mappings
@@ -131,6 +134,7 @@ async def transition_to_vote(code: str):
 
     # 3. Store the public list (just strings or id/text pairs, NO player SIDs attached!)
     room["shuffled_choices"] = all_choices
+    room["deadline"] = time.time() + 45
 
     # 4. Broadcast the new voting phase and the options to everyone
     public_state = get_public_room_state(room)
@@ -139,7 +143,7 @@ async def transition_to_vote(code: str):
     # 5. Start the voting timer
     if room.get("timer_task"):
         room["timer_task"].cancel()
-    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=30))
+    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=45))
 
 # timer for question staging
 async def write_phase_timer(code: str, seconds: int = 45):
@@ -323,6 +327,7 @@ async def handle_start_question_staging(sid, data: dict):
     if room.get("timer_task"):
         room["timer_task"].cancel()
     # Start timer
+    room["deadline"] = time.time() + 45
     room["timer_task"] = asyncio.create_task(write_phase_timer(code, seconds=45))
 
     # broadcast updated state to everyone in socket room
