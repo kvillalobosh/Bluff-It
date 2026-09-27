@@ -25,7 +25,7 @@ The repository is a monorepo containing both the frontend and backend:
 └── README.md
 ```
 
-* **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Motion (animations) and Zustand (state). Deploys to Vercel.
+* **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Motion (animations) and Zustand (state).
 * **Backend:** Python `python-socketio` running on `uvicorn`, with in-memory rooms and asyncio timers.
 * **Communication:** Real-time, two-way WebSockets via Socket.IO. The server is the single source of truth; clients only render the state it broadcasts.
 
