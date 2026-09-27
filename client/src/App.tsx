@@ -2,9 +2,10 @@ import "./App.css"
 import { FinalLeaderboard } from "@/screens/FinalLeaderboard"
 import { Home } from "@/screens/Home"
 import { HostLobby } from "@/screens/HostLobby"
+import { HostLeaderboard } from "@/screens/HostLeaderboard"
 import { HostResults } from "@/screens/HostResults"
-import { Leaderboard } from "@/screens/Leaderboard"
 import { PlayerAnswer } from "@/screens/PlayerAnswer"
+import { PlayerLeaderboard } from "@/screens/PlayerLeaderboard"
 import { PlayerLobby } from "@/screens/PlayerLobby"
 import { PlayerResult } from "@/screens/PlayerResult"
 import { PlayerVote } from "@/screens/PlayerVote"
@@ -24,7 +25,7 @@ function App() {
     case "lobby":
       return role === "host" ? <HostLobby /> : <PlayerLobby />
     case "leaderboard_view":
-      return <Leaderboard />
+      return role === "host" ? <HostLeaderboard /> : <PlayerLeaderboard />
     case "question_staging":
       return role === "host" ? <QuestionStaging /> : <PlayerAnswer />
     case "question_voting":
