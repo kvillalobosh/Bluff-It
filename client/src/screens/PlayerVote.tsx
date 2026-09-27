@@ -1,6 +1,7 @@
 import { useState } from "react"
+import { TopNav } from "@/components/ui/TopNav"
+import { WaitingDots } from "@/components/ui/WaitingDots"
 import { Countdown } from "@/components/Countdown"
-import { Button } from "@/components/ui/button"
 import { socket } from "@/lib/socket"
 import { useCountdown } from "@/lib/useCountdown"
 import { VOTE_SECONDS, useGame } from "@/store/game"
@@ -18,15 +19,12 @@ const SUSPENSE_LINES = [
 export function PlayerVote() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // useState initializer runs once per mount, so the line doesn't change on every re-render
-  const [suspense] = useState(() => SUSPENSE_LINES[Math.floor(Math.random() * SUSPENSE_LINES.length)])
-  const { room, myAnswer, myVote, submitVote } = useGame()
+  const { code, room, myAnswer, myVote, submitVote } = useGame()
   const remaining = useCountdown(room?.deadline)
   if (!room) return null
 
+  const suspense = SUSPENSE_LINES[Math.floor(Math.random() * SUSPENSE_LINES.length)]
   const me = socket.id ? room.players[socket.id] : undefined
-  const active = Object.values(room.players).filter((p) => p.connected)
-  const voted = active.filter((p) => p.has_voted).length
   const timeUp = remaining === 0
 
   const onVote = async (choice: string) => {
@@ -44,44 +42,41 @@ export function PlayerVote() {
   // Already voted: grey suspense screen until the server moves to "results"
   if (me?.has_voted) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-3xl font-bold">{suspense}</p>
-        {myVote && <p className="text-muted-foreground">You picked “{myVote.toLowerCase()}”</p>}
-        <p className="text-sm text-muted-foreground">
-          {voted}/{active.length} voted
-        </p>
+      <div className="player-answer-screen">
+        <TopNav leftText="" centerText={`Round ${room.round}`} rightText={code ? `Room: ${code}` : "WAITING"} />
+
+        <div className="player-result-card">
+          <p className="player-result-title">{suspense}</p>
+          {myVote && <p className="player-vote-picked">You picked “{myVote.toLowerCase()}”</p>}
+          <WaitingDots />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-6 px-4 py-6">
+    <div className="player-answer-screen">
+      <TopNav leftText="" centerText={`Round ${room.round}`} rightText={code ? `Room: ${code}` : "WAITING"} />
+
       <Countdown deadline={room.deadline} total={VOTE_SECONDS} label="Which answer is real?" />
 
-      {/* Question card */}
-      <div className="rounded-xl border p-6">
-        <p className="text-center text-2xl font-bold">{room.question}</p>
-      </div>
-
-      {/* Same shuffled order as the host screen, minus this player's own fake */}
-      <div className="grid gap-3">
+      <div className="player-vote-grid">
         {room.choices
           .filter((c) => c !== myAnswer)
           .map((choice) => (
-            <Button
+            <button
               key={choice}
-              variant="outline"
-              size="lg"
-              className="h-auto min-h-14 rounded-xl py-3 text-base whitespace-normal"
+              type="button"
+              className="player-vote-choice"
               disabled={busy || timeUp}
               onClick={() => onVote(choice)}
             >
               {choice.toLowerCase()}
-            </Button>
+            </button>
           ))}
       </div>
 
-      {timeUp && <p className="text-center text-sm text-muted-foreground">Time's up!</p>}
+      {timeUp && <p className="player-vote-status">Time's up!</p>}
       {error && <p className="text-sm font-medium text-red-600">{error}</p>}
     </div>
   )
