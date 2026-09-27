@@ -20,7 +20,7 @@ WRITE_SECONDS = 45
 VOTE_SECONDS = 30
 
 # Rounds per game — must match TOTAL_ROUNDS in client/src/store/game.ts
-TOTAL_ROUNDS = 1
+TOTAL_ROUNDS = 5
 
 # a dictionary to hold all the active rooms
 # key: 4-letter room code
