@@ -39,7 +39,27 @@ rooms[code] = {
 }
 """
 
+ANIMAL_AVATARS = [
+    "bear.png",
+    "frog.png",
+    "giraffe.png",
+    "koala.png",
+    "lion.png",
+    "monkey.png",
+    "panda.png",
+    "red-panda.png",
+    "rhino.png",
+    "sloth.png",
+]
+
 # helper functions
+
+def choose_avatar_for_player(room: dict, used_avatars: set[str] | None = None):
+    available = [
+        name for name in ANIMAL_AVATARS
+        if not used_avatars or name not in used_avatars
+    ]
+    return random.choice(available) if available else random.choice(ANIMAL_AVATARS)
 
 # validates room existence and host permission.
 def get_room_or_error_host(code: str, host_sid: str = None):
@@ -235,7 +255,6 @@ async def handle_join_room(sid, data: dict):
     # get the room code and nickname
     code = data.get("code", "").upper().strip()
     name = data.get("name", "").strip()
-    avatar = data.get("name", "").strip()
 
     # validation checks
     if not code or not name:
@@ -245,7 +264,7 @@ async def handle_join_room(sid, data: dict):
     room = rooms[code]
 
     # room cap validation
-    if len(room["players"]) > 8:
+    if len(room["players"]) >= 8:
         return {"success": False, "error": "Room capacity reached."}
 
     # room phase validation
@@ -262,6 +281,9 @@ async def handle_join_room(sid, data: dict):
             "success": False,
             "error": f"Name '{name}' is already taken. Choose another!"
         }
+
+    used_avatars = {player["avatar"] for player in room["players"].values() if "avatar" in player}
+    avatar = choose_avatar_for_player(room, used_avatars)
 
     # add player to the socket.io room group
     await sio.enter_room(sid, code)

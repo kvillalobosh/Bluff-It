@@ -14,6 +14,7 @@ import { call, socket, type Ack } from "@/lib/socket"
 export type Player = {
   id: string // socket sid
   name: string
+  avatar: string
   score: number
   connected: boolean
   has_answered: boolean // submitted a fake this round
