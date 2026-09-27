@@ -1,44 +1,60 @@
+import { Avatar } from "@/components/Avatar"
 import { Countdown } from "@/components/Countdown"
-import { WRITE_SECONDS, useGame } from "@/store/game"
+import { TopNav } from "@/components/ui/TopNav"
+import { useGame } from "@/store/game"
+import { WRITE_SECONDS } from "@/store/game"
 
 // Host screen while phase === "question_staging": players are writing their fake answers.
 export function QuestionStaging() {
   const room = useGame((s) => s.room)
+  const code = useGame((s) => s.code)
   if (!room) return null
 
   const players = Object.values(room.players)
-  // The server moves on once every *connected* player has answered, so count the same way
   const active = players.filter((p) => p.connected)
   const answered = active.filter((p) => p.has_answered).length
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-4xl flex-col justify-center gap-6 px-4 py-6">
-      {/* Timer above both cards */}
-      <Countdown deadline={room.deadline} total={WRITE_SECONDS} label={`Round ${room.round} · Write a fake answer!`} />
+    <div className="host-lobby-screen question-staging-screen">
+      <TopNav leftText={`ROUND ${room.round}`} rightText={`ROOM: ${code ?? ""}`} />
 
-      <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-        {/* Left: the question */}
-        <div className="flex items-center justify-center rounded-xl border p-8">
-          <p className="text-center text-3xl font-bold">{room.question}</p>
-        </div>
+      <main className="question-staging-main">
+        <Countdown deadline={room.deadline} total={WRITE_SECONDS} label="" />
 
-        {/* Right: who has submitted */}
-        <div className="flex flex-col gap-3 rounded-xl border p-4">
-          <p className="font-medium">
-            {answered}/{active.length} players submitted
-          </p>
-          <ul className="divide-y">
-            {players.map((p) => (
-              <li key={p.id} className={`flex items-center justify-between py-2 ${p.connected ? "" : "opacity-40"}`}>
-                <span className="font-medium">{p.name}</span>
-                <span className={p.has_answered ? "text-green-600" : "text-muted-foreground"}>
-                  {p.has_answered ? "✓ submitted" : "writing…"}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <div className="question-staging-grid">
+          <section className="question-staging-card-wrap">
+            <div className="question-staging-card">
+              <p className="question-staging-question">{room.question}</p>
+            </div>
+            <p className="question-staging-instruction">Write a convincing fake answer on your device!</p>
+          </section>
+
+          <aside className="question-staging-status-panel">
+            <div className="question-staging-status-header">
+              <span>{answered}/{active.length}</span>
+              <span>SUBMITTED</span>
+            </div>
+
+            <div className="question-staging-rows">
+              {players.map((p) => (
+                <div
+                  key={p.id}
+                  className={`question-staging-row ${p.connected ? "" : "question-staging-row--away"} ${p.has_answered ? "question-staging-row--done" : ""}`}
+                >
+                  <div className="question-staging-player">
+                    <Avatar avatar={p.avatar} name={p.name} className="question-staging-avatar" />
+                    <span className="question-staging-player-name">{p.name}</span>
+                  </div>
+
+                  <span className="question-staging-status-indicator">
+                    {p.has_answered ? "✓" : "…"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

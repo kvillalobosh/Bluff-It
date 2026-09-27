@@ -83,7 +83,17 @@ export function Home() {
             <Button type="submit" size="lg" className="home-action-button" disabled={busy || code.length !== 4 || !name.trim()}>
               Join
             </Button>
-            <Button type="button" className="home-action-button home-action-button-secondary" onClick={() => setMode("choose")}>
+            <Button
+              type="button"
+              className="home-action-button home-action-button-secondary"
+              onClick={() => {
+                setMode("choose")
+                setError(null)
+                setAck(null)
+                setCode("")
+                setName("")
+              }}
+            >
               Back
             </Button>
           </form>

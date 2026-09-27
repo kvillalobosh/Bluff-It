@@ -20,13 +20,15 @@ export function PlayerLeaderboard() {
   const me = socket.id ? room.players[socket.id] : undefined
   if (!me) return null
 
+  const totalRounds = room.max_rounds ?? TOTAL_ROUNDS
+
   // Round 1 = game just started, nothing to count up yet
   const firstRound = room.round <= 1 || !roundStartScores
   const start = firstRound ? me.score : (roundStartScores?.[me.id] ?? me.score)
   const gain = me.score - start
   const isLeader = !firstRound && Object.values(room.players).every((p) => p.score <= me.score)
 
-  const roundLabel = firstRound ? `ROUND 1 OF ${TOTAL_ROUNDS}` : `ROUND ${room.round - 1} OF ${TOTAL_ROUNDS} COMPLETE`
+  const roundLabel = firstRound ? `ROUND 1 OF ${totalRounds}` : `ROUND ${room.round - 1} OF ${totalRounds} COMPLETE`
 
   return (
     <div className="player-board">

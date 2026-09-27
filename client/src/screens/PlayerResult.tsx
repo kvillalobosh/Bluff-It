@@ -9,10 +9,11 @@ export function PlayerResult() {
 
   // The server only sends real_answer / round_votes / round_answers in the results phase
   const myVote = socket.id ? room.round_votes?.[socket.id] : undefined
+  const myVoteChoice = room.choices.find((choice) => choice.id === myVote)
 
   const renderContent = () => {
     // Didn't vote before the timer ran out
-    if (!myVote) {
+    if (!myVoteChoice) {
       return (
         <>
           <p className="player-result-title">Time's up — no vote!</p>
@@ -21,7 +22,7 @@ export function PlayerResult() {
       )
     }
 
-    if (myVote === room.real_answer) {
+    if (myVoteChoice.text === room.real_answer) {
       return (
         <>
           <p className="player-result-title">“{room.real_answer?.toLowerCase()}” was the truth!</p>
@@ -31,7 +32,7 @@ export function PlayerResult() {
     }
 
     // Fooled: find who wrote the fake we picked (same lookup the server uses to award points)
-    const authorSid = Object.entries(room.round_answers ?? {}).find(([, text]) => text === myVote)?.[0]
+    const authorSid = Object.entries(room.round_answers ?? {}).find(([, text]) => text === myVoteChoice.text)?.[0]
     const authorName = authorSid ? room.players[authorSid]?.name : undefined
 
     return (
