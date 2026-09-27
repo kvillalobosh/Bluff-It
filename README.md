@@ -1,4 +1,4 @@
-# 🃏 Bluff It! — Bluff Trivia Game
+# Bluff-It! 
 
 A browser-based, Kahoot/Jackbox-style party game where players write fake answers to trivia questions to fool each other. One host screen shows the game, while up to 8 players join from their own devices using a 4-letter room code.
 
