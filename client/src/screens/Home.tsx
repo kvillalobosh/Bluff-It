@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { SkyBackdrop } from "@/components/SkyBackdrop"
 import type { Ack } from "@/lib/socket"
 import { useGame } from "@/store/game"
 import logo from "@/assets/bluffit-logo.png"
@@ -27,7 +28,10 @@ export function Home() {
   }
 
   return (
-    <div className="home-page">
+    <div className="home-page sky-screen">
+      {/* Blue gradient sky with drifting clouds, behind everything */}
+      <SkyBackdrop />
+
       <div className="home-header">
         <img
           src={logo}

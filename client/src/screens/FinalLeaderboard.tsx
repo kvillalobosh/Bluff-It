@@ -1,32 +1,45 @@
 import { useEffect } from "react"
+import { Avatar } from "@/components/Avatar"
 import confetti from "canvas-confetti"
 import { motion } from "motion/react"
-import { Avatar } from "@/components/Avatar"
-import { socket } from "@/lib/socket"
 import { useGame } from "@/store/game"
+import "../FinalLeaderboard.css"
 
-// Card sizes from 1st place down — each row is smaller than the one above it (max 8 players)
-const TIERS = [
-  { card: "max-w-3xl gap-6 p-6 border-[6px]", avatar: "size-28 text-5xl", name: "text-5xl", score: "text-5xl", rank: "text-7xl" },
-  { card: "max-w-2xl gap-5 p-5 border-[5px]", avatar: "size-24 text-4xl", name: "text-4xl", score: "text-4xl", rank: "text-6xl" },
-  { card: "max-w-xl gap-4 p-4 border-4", avatar: "size-20 text-3xl", name: "text-3xl", score: "text-3xl", rank: "text-5xl" },
-  { card: "max-w-lg gap-4 p-3 border-4", avatar: "size-16 text-2xl", name: "text-2xl", score: "text-2xl", rank: "text-4xl" },
-  { card: "max-w-md gap-3 p-3 border-[3px]", avatar: "size-14 text-xl", name: "text-xl", score: "text-xl", rank: "text-3xl" },
-  { card: "max-w-sm gap-3 p-2 border-[3px]", avatar: "size-12 text-lg", name: "text-lg", score: "text-lg", rank: "text-2xl" },
-  { card: "max-w-xs gap-2 p-2 border-2", avatar: "size-10 text-base", name: "text-base", score: "text-base", rank: "text-xl" },
-  { card: "max-w-2xs gap-2 p-2 border-2", avatar: "size-9 text-sm", name: "text-sm", score: "text-sm", rank: "text-lg" },
-]
-
-// Seconds between each card appearing. Cards reveal from last place up, so 1st place lands last.
+// Seconds between each card appearing. Cards reveal 4th → 1st, so 1st place lands last.
 const REVEAL_STEP = 0.5
+const BASE_DELAY = 0.6 // wait for the title + "Final Scores" pill first
+const SLOTS = 4
+
+// Clouds all drift left → right, each in its own lane in the blue half of the sky.
+// Negative delays start them mid-journey so the sky is already populated on load.
+// size = width in px, duration = seconds to cross the screen, opacity = depth
+const CLOUDS = [
+  { top: "3%", size: 260, duration: 38, delay: -4, opacity: 0.95 },
+  { top: "11%", size: 150, duration: 52, delay: -30, opacity: 0.7 },
+  { top: "19%", size: 210, duration: 44, delay: -18, opacity: 0.85 },
+  { top: "27%", size: 120, duration: 60, delay: -45, opacity: 0.6 },
+  { top: "34%", size: 230, duration: 48, delay: -8, opacity: 0.8 },
+  { top: "7%", size: 180, duration: 56, delay: -40, opacity: 0.75 },
+  { top: "40%", size: 140, duration: 64, delay: -24, opacity: 0.55 },
+]
 
 // Shown to everyone when phase === "end_screen" (after the last round).
 export function FinalLeaderboard() {
   const room = useGame((s) => s.room)
   const players = Object.values(room?.players ?? {}).sort((a, b) => b.score - a.score)
-  const winnerDelay = (players.length - 1) * REVEAL_STEP + 0.6
 
-  // Confetti: a burst when the winner's card lands, then streams from both sides for a few seconds
+  // Top 4, padded with empty slots so there are always 4 cards on screen.
+  // Rank uses "competition ranking": tied scores share a rank (1, 1, 3, 4).
+  const slots = Array.from({ length: SLOTS }, (_, i) => {
+    const p = players[i] ?? null
+    const rank = p ? 1 + players.filter((o) => o.score > p.score).length : i + 1
+    return { p, rank, slot: i }
+  })
+
+  const revealDelay = (slot: number) => BASE_DELAY + (SLOTS - 1 - slot) * REVEAL_STEP
+  const winnerDelay = revealDelay(0) + 0.35
+
+  // Confetti: a burst when 1st place lands, then streams from both sides for a few seconds
   useEffect(() => {
     let frame = 0
     const start = setTimeout(() => {
@@ -38,7 +51,7 @@ export function FinalLeaderboard() {
         if (Date.now() < end) frame = requestAnimationFrame(stream)
       }
       stream()
-    }, winnerDelay * 1000)
+    }, winnerDelay * 3000)
 
     return () => {
       clearTimeout(start)
@@ -50,62 +63,150 @@ export function FinalLeaderboard() {
   if (!room) return null
 
   return (
-    <div className="flex min-h-svh w-full flex-col items-center gap-8 overflow-hidden px-8 py-10">
-      {/* Title */}
+    <div className="final-board">
+      {/* Backdrop: gradient + grid + drifting clouds. Fixed behind everything, never fills content. */}
+      <div className="final-sky" aria-hidden>
+        {CLOUDS.map((c, i) => (
+          <div
+            key={i}
+            className="final-sky-cloud"
+            style={{
+              top: c.top,
+              width: c.size,
+              opacity: c.opacity,
+              animationDuration: `${c.duration}s`,
+              animationDelay: `${c.delay}s`,
+            }}
+          >
+            <Cloud />
+          </div>
+        ))}
+      </div>
+
+      {/* Title — straight, not arched */}
       <motion.h1
-        className="-rotate-2 text-center text-6xl font-black uppercase tracking-tight md:text-7xl"
+        className="final-board-title"
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
       >
         Thanks for playing!
       </motion.h1>
-      <div className="rounded-full border-4 border-foreground px-8 py-2 text-2xl font-black uppercase">Final Scores</div>
 
-      {/* Podium list: 1st on top and biggest, everyone else smaller below */}
-      <ol className="flex w-full flex-col items-center gap-4">
-        {players.map((p, i) => {
-          const tier = TIERS[Math.min(i, TIERS.length - 1)]
-          // Ties share a rank (e.g. 1, 1, 3)
-          const rank = 1 + players.filter((o) => o.score > p.score).length
-          const isWinner = rank === 1
+      <motion.div
+        className="final-board-pill"
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, type: "spring", bounce: 0.4 }}
+      >
+        Final Scores
+      </motion.div>
 
-          return (
-            <motion.li
-              key={p.id}
-              className={`flex w-full items-center rounded-3xl border-foreground bg-background shadow-[6px_6px_0_0_var(--foreground)] ${tier.card}`}
-              initial={{ y: 60, opacity: 0, scale: 0.8 }}
+      {/* Four pointed cards — no grey backdrop behind them */}
+      <div className="final-board-panel">
+        <div className="final-board-row">
+          {slots.map(({ p, rank, slot }) => (
+            <motion.div
+              key={p?.id ?? `empty-${slot}`}
+              className={[
+                "final-card",
+                rank === 1 && p ? "final-card--first" : "",
+                rank === 2 && p ? "final-card--silver" : "",
+                rank === 3 && p ? "final-card--bronze" : "",
+                !p ? "final-card--empty" : "",
+              ].join(" ")}
+              initial={{ y: 40, opacity: 0, scale: 0.9 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
-              transition={{ type: "spring", bounce: 0.45, delay: (players.length - 1 - i) * REVEAL_STEP }}
+              transition={{ type: "spring", bounce: 0.45, delay: revealDelay(slot) }}
             >
-              <span className={`w-[1.5em] shrink-0 text-center font-black ${tier.rank}`}>{rank}</span>
+              {/* House-shaped card: offset shadow + white body with blue outline */}
+              <svg className="final-card-shape" viewBox="0 0 200 250" preserveAspectRatio="none" aria-hidden>
+                <path className="final-card-shadow" d={CARD_PATH} transform="translate(7 7)" />
+                <path className="final-card-body" d={CARD_PATH} vectorEffect="non-scaling-stroke" />
+              </svg>
 
-              <div className="relative">
-                {isWinner && (
-                  <motion.span
-                    className="absolute -top-10 left-1/2 -translate-x-1/2 text-5xl"
-                    initial={{ y: -40, opacity: 0, rotate: -30 }}
-                    animate={{ y: 0, opacity: 1, rotate: -12 }}
-                    transition={{ type: "spring", bounce: 0.6, delay: winnerDelay }}
-                  >
-                    👑
-                  </motion.span>
+              <span className="final-card-rank">{rank}</span>
+              {rank === 1 && p && <Crown />}
+
+              <div className="final-card-content">
+                {p ? (
+                  <>
+                    <div className="final-card-avatar">
+                      <Avatar avatar={p.avatar} name={p.name} className="final-card-avatar-image" />
+                    </div>
+
+                    <div className="final-card-player">
+                      <span className="final-card-player-name">{p.name}</span>
+                      <div className="final-card-points">
+                        <span>{p.score.toLocaleString()}</span>
+                        <span className="final-card-points-unit">pts</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="final-card-avatar final-card-avatar--empty" />
+                    <div className="final-card-player final-card-player--empty">
+                      <span className="final-card-player-name">—</span>
+                      <div className="final-card-points">
+                        <span>—</span>
+                      </div>
+                    </div>
+                  </>
                 )}
-                <Avatar avatar={p.avatar} name={p.name} className={tier.avatar} />
               </div>
-
-              <span className={`min-w-0 flex-1 truncate font-black ${tier.name}`}>
-                {p.name}
-                {p.id === socket.id && <span className="font-bold text-muted-foreground"> (you)</span>}
-              </span>
-
-              <span className={`shrink-0 font-mono font-black tabular-nums ${tier.score}`}>
-                {p.score.toLocaleString()}
-              </span>
-            </motion.li>
-          )
-        })}
-      </ol>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     </div>
+  )
+}
+
+// Pentagon "house" with softly rounded bottom corners, drawn in a 200×250 box
+const CARD_PATH = "M100 5 L195 62 L195 232 Q195 245 182 245 L18 245 Q5 245 5 232 L5 62 Z"
+
+// Lineless cartoon cloud: pale-blue underside peeking out below a white puff stack
+function Cloud() {
+  const puffs = (
+    <>
+      <circle cx="52" cy="66" r="30" />
+      <circle cx="90" cy="46" r="38" />
+      <circle cx="132" cy="52" r="32" />
+      <circle cx="162" cy="70" r="24" />
+      <rect x="28" y="62" width="156" height="34" rx="17" />
+    </>
+  )
+  return (
+    <svg viewBox="0 0 200 100" className="final-sky-cloud-svg">
+      <g fill="#d6e6f7">{puffs}</g>
+      <g fill="#ffffff" transform="translate(0 -6)">{puffs}</g>
+    </svg>
+  )
+}
+
+// Gold crown that sits on the roof peak of the 1st-place card
+function Crown() {
+  const shape = (
+    <>
+      <path d="M12 56 L8 22 L30 40 L50 12 L70 40 L92 22 L88 56 Z" />
+      <rect x="10" y="52" width="80" height="14" rx="5" />
+      <circle cx="8" cy="20" r="6" />
+      <circle cx="50" cy="10" r="7" />
+      <circle cx="92" cy="20" r="6" />
+    </>
+  )
+  return (
+    <svg className="final-card-crown" viewBox="-2 0 104 72" aria-hidden>
+      {/* offset shadow */}
+      <g fill="#2c4f82" transform="translate(3 3)">{shape}</g>
+      {/* gold body */}
+      <g fill="#f3d97a" stroke="#8e782b" strokeWidth="3" strokeLinejoin="round">{shape}</g>
+      {/* shine + jewels */}
+      <path d="M22 44 L30 46 L50 22" fill="none" stroke="#fff6c9" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="30" cy="59" r="4" fill="#e46a6a" />
+      <circle cx="50" cy="59" r="4.5" fill="#4a6fa5" />
+      <circle cx="70" cy="59" r="4" fill="#e46a6a" />
+    </svg>
   )
 }

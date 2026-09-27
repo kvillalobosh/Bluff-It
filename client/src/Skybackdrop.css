@@ -1,0 +1,60 @@
+/* ---------- Sky backdrop (SkyBackdrop.tsx) ---------- */
+
+/* Put this on the screen's root element. It makes a local stacking layer
+   so the sky (z-index -1) paints behind every child without you having to
+   change any child's position or z-index. */
+.sky-screen {
+  position: relative;
+  isolation: isolate;
+}
+
+.sky-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  /* dark blue at the top, lightening, fully white by halfway down */
+  background:
+    linear-gradient(rgba(44, 79, 130, 0.1) 1px, transparent 1px) 0 0 / 38px 38px,
+    linear-gradient(90deg, rgba(44, 79, 130, 0.1) 1px, transparent 1px) 0 0 / 38px 38px,
+    linear-gradient(to bottom,
+      #2c4f82 0%,
+      #4a6fa5 16%,
+      #7d9fd0 30%,
+      #bcd1ec 41%,
+      #e8f0f9 47%,
+      #ffffff 52%);
+}
+
+/* Each cloud starts just off the left edge and slides fully off the right */
+.sky-backdrop-cloud {
+  position: absolute;
+  left: 0;
+  transform: translateX(-100%);
+  animation-name: sky-cloud-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.sky-backdrop-cloud-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@keyframes sky-cloud-drift {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-backdrop-cloud {
+    animation-duration: 400s !important;
+  }
+}
