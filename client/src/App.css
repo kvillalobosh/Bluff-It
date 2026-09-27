@@ -205,9 +205,40 @@
 }
 
 .host-lobby-screen {
-  
+  position: relative;
   padding: 0 0 96px;
   background: transparent;
+}
+
+.host-lobby-demo-toggle {
+  position: absolute;
+  bottom: 12px;
+  left: 18px;
+  z-index: 21;
+  padding: 6px 10px;
+  border: 2px solid #4a6fa5;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 3px 0 rgba(74, 111, 165, 0.2);
+  color: #1f2a44;
+  font-family: "Coiny", system-ui;
+  font-size: 0.58rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.host-lobby-demo-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 rgba(74, 111, 165, 0.2);
+}
+
+.host-lobby-demo-toggle--active {
+  background: #4a6fa5;
+  color: #ffffff;
+  box-shadow: 0 3px 0 #2c4f82;
 }
 
 .top-nav-bar {

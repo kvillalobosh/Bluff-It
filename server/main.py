@@ -124,6 +124,7 @@ def get_public_room_state(room: dict) -> dict:
     public_state = {
         "phase": room["phase"],
         "round": room.get("round", 1),
+        "max_rounds": room.get("max_rounds", TOTAL_ROUNDS),
         "players": safe_players_copy,
         "question": None,
         "choices": room.get("shuffled_choices", []),
@@ -260,6 +261,7 @@ async def handle_create_room(sid):
         "host_token": host_token,
         "phase": "lobby",
         "round": 1,
+        "max_rounds": TOTAL_ROUNDS,
         "players": {},
         "current_question": None,
         "round_answers": {},
@@ -372,6 +374,9 @@ async def handle_start_game(sid, data: dict):
     # prevent starting an empty room
     if len(room["players"]) < 1:
         return {"success": False, "error": "Need at least 1 player to start."}
+
+    max_rounds = data.get("max_rounds", room.get("max_rounds", TOTAL_ROUNDS))
+    room["max_rounds"] = max(2, min(int(max_rounds), 5)) if isinstance(max_rounds, (int, float, str)) and str(max_rounds).strip() else room.get("max_rounds", TOTAL_ROUNDS)
 
     # update the state machine
     room["phase"] = "leaderboard_view"
@@ -517,8 +522,8 @@ async def handle_start_next_round(sid, data:dict):
     # update the state machine
     room["round"] += 1
 
-    # check if we reached the end of the game (five rounds)
-    if room["round"] > 5:
+    # check if we reached the end of the game
+    if room["round"] > room.get("max_rounds", TOTAL_ROUNDS):
         room["phase"] = "end_screen"
     else:
         room["phase"] = "leaderboard_view"

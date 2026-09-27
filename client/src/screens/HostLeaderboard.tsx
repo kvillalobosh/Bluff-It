@@ -15,6 +15,7 @@ export function HostLeaderboard() {
 
   // Highest score first
   const players = Object.values(room.players).sort((a, b) => b.score - a.score)
+  const totalRounds = room.max_rounds ?? TOTAL_ROUNDS
   // Round 1 = game just started (all 0 pts). host:next_round bumps round, so > 1 means we're between rounds.
   const firstRound = room.round <= 1
 
@@ -32,7 +33,7 @@ export function HostLeaderboard() {
 
   return (
     <div className="host-lobby-screen">
-      <TopNav leftText={`ROUND ${room.round} OF ${TOTAL_ROUNDS}`} rightText={`CODE: ${code}`} />
+      <TopNav leftText={`ROUND ${room.round} OF ${totalRounds}`} rightText={`CODE: ${code}`} />
 
       <main className="leaderboard-main">
         <div className="leaderboard-panel">

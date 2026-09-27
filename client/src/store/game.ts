@@ -10,8 +10,9 @@
 import { create } from "zustand"
 import { call, socket, type Ack } from "@/lib/socket"
 
-// Game length — must match the `round > 5` check in host:next_round (server/main.py)
+// Game length — must match the default round limit in server/main.py
 export const TOTAL_ROUNDS = 5
+export const DEMO_ROUNDS = 2
 // Phase lengths in seconds — must match WRITE_SECONDS / VOTE_SECONDS in server/main.py (used to size the timer bar)
 export const WRITE_SECONDS = 45
 export const VOTE_SECONDS = 30
@@ -35,7 +36,8 @@ export type Choice = {
 export type RoomState = {
   // "lobby" | "leaderboard_view" | "question_staging" | "question_voting" | "results" | "end_screen"
   phase: string
-  round: number // 1-5; the server increments it on host:next_round
+  round: number // 1-N; the server increments it on host:next_round
+  max_rounds?: number
   players: Record<string, Player> // keyed by sid
   question: string | null
   choices: Choice[]
@@ -60,7 +62,7 @@ type GameStore = {
   // actions (send events to the server, resolve with its "ack")
   createRoom: () => Promise<Ack> // host:create -> { room_code }
   joinRoom: (code: string, name: string) => Promise<Ack> // player:join_room -> { success, room_code } or throws
-  startGame: () => Promise<Ack> // host:start_game -> { success } or throws
+  startGame: (maxRounds?: number) => Promise<Ack> // host:start_game -> { success } or throws
   beginRound: () => Promise<Ack> // host:begin_question_staging -> { success } or throws
   submitAnswer: (answer: string) => Promise<Ack> // player:answer_created -> { success } or throws
   submitVote: (choiceId: string) => Promise<Ack> // player:submit_vote -> { success } or throws
@@ -100,7 +102,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ role: "player", code: res.room_code as string })
     return res
   },
-  startGame: () => call("host:start_game", { code: get().code }),
+  startGame: (maxRounds = TOTAL_ROUNDS) => call("host:start_game", { code: get().code, max_rounds: maxRounds }),
   beginRound: () => call("host:begin_question_staging", { code: get().code }),
   submitAnswer: async (answer) => {
     const res = await call("player:answer_created", { code: get().code, answer })
