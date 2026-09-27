@@ -53,12 +53,9 @@
 
 #root {
   width: 100%;
-<<<<<<< HEAD
   max-width: 100%;
   margin: 0;
   text-align: center;
-=======
->>>>>>> origin/main
   min-height: 100svh;
   display: flex;
   flex-direction: column;

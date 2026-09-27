@@ -1,6 +1,7 @@
 import { useState } from "react"
+import { TopNav } from "@/components/ui/TopNav"
+import { WaitingDots } from "@/components/ui/WaitingDots"
 import { Countdown } from "@/components/Countdown"
-import { Button } from "@/components/ui/button"
 import { socket } from "@/lib/socket"
 import { useCountdown } from "@/lib/useCountdown"
 import { WRITE_SECONDS, useGame } from "@/store/game"
@@ -10,7 +11,7 @@ export function PlayerAnswer() {
   const [answer, setAnswer] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { room, myAnswer, submitAnswer } = useGame()
+  const { code, room, submitAnswer } = useGame()
   const remaining = useCountdown(room?.deadline)
   if (!room) return null
 
@@ -18,9 +19,6 @@ export function PlayerAnswer() {
   const me = socket.id ? room.players[socket.id] : undefined
   const submitted = me?.has_answered ?? false
   const timeUp = remaining === 0
-
-  const active = Object.values(room.players).filter((p) => p.connected)
-  const answered = active.filter((p) => p.has_answered).length
 
   const onSubmit = async () => {
     setBusy(true)
@@ -36,35 +34,31 @@ export function PlayerAnswer() {
   }
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-6 px-4 py-6">
-      {/* Countdown on top */}
-      <Countdown deadline={room.deadline} total={WRITE_SECONDS} label={`Round ${room.round} · Write a fake answer!`} />
+    <div className="player-answer-screen">
+      <TopNav leftText="" centerText={`Round ${room.round}`} rightText={code ? `Room: ${code}` : "WAITING"} />
 
-      {/* Question card */}
-      <div className="rounded-xl border p-6">
-        <p className="text-center text-2xl font-bold">{room.question}</p>
+      <Countdown deadline={room.deadline} total={WRITE_SECONDS} label="" />
+
+      <div className="player-answer-card">
+        <p className="player-answer-question">{room.question}</p>
       </div>
 
-      {/* Answer card */}
-      <div className="flex flex-col gap-3 rounded-xl border p-4">
+      <div className="player-answer-form">
         {submitted ? (
           <>
-            <p className="text-center font-medium text-green-600">Locked in ✓</p>
-            {myAnswer && <p className="text-center text-muted-foreground">“{myAnswer.toLowerCase()}”</p>}
-            <p className="text-center text-sm text-muted-foreground">
-              Waiting for others… {answered}/{active.length} submitted
-            </p>
+            <p className="text-center font-medium text-green-600" style={{ fontFamily: "'Coiny', system-ui" }}>Locked in ✓</p>
+            <WaitingDots />
           </>
         ) : (
           <form
-            className="flex flex-col gap-3"
+            className="player-answer-form"
             onSubmit={(e) => {
               e.preventDefault()
               onSubmit()
             }}
           >
             <input
-              className="h-12 rounded-lg border px-3"
+              className="player-answer-input"
               placeholder="Write a convincing fake answer"
               maxLength={60}
               value={answer}
@@ -72,9 +66,9 @@ export function PlayerAnswer() {
               disabled={timeUp}
               autoFocus
             />
-            <Button type="submit" size="lg" className="h-12 text-base" disabled={busy || timeUp || !answer.trim()}>
+            <button type="submit" className="player-answer-submit" disabled={busy || timeUp || !answer.trim()}>
               {timeUp ? "Time's up!" : "Submit answer"}
-            </Button>
+            </button>
             {error && <p className="text-sm font-medium text-red-600">{error}</p>}
           </form>
         )}
