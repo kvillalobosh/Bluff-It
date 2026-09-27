@@ -11,8 +11,8 @@ import { create } from "zustand"
 import { call, socket, type Ack } from "@/lib/socket"
 
 // Game length — must match the `round > 5` check in host:next_round (server/main.py)
-export const TOTAL_ROUNDS = 1
-// Phase lengths in seconds — must match the timers in server/main.py (used to size the timer bar)
+export const TOTAL_ROUNDS = 5
+// Phase lengths in seconds — must match WRITE_SECONDS / VOTE_SECONDS in server/main.py (used to size the timer bar)
 export const WRITE_SECONDS = 45
 export const VOTE_SECONDS = 30
 
@@ -55,6 +55,7 @@ type GameStore = {
   myAnswer: string | null // this player's fake for the current round (so voting can hide it later)
   myAnswerId: string | null // stable id for this player's submitted fake answer, so duplicates remain distinct
   myVote: string | null // the choice this player voted for this round
+  roundStartScores: Record<string, number> | null // sid -> score when the current round began (leaderboard counts up from here)
 
   // actions (send events to the server, resolve with its "ack")
   createRoom: () => Promise<Ack> // host:create -> { room_code }
@@ -77,6 +78,7 @@ export const useGame = create<GameStore>((set, get) => ({
   myAnswer: null,
   myAnswerId: null,
   myVote: null,
+  roundStartScores: null,
 
   // Actions send the request and hand back the "ack" to the caller (ex. Home.tsx).
   // Room data only arrives via state:update.
@@ -147,7 +149,14 @@ socket.on("connect", async () => {
 
 // Broadcast to everyone in the room whenever the room changes (player joins, phase changes, etc.)
 socket.on("state:update", (room: RoomState) => {
-  // A new writing phase starting = new round, so forget last round's answer and vote
-  const newRound = room.phase === "question_staging" && useGame.getState().room?.phase !== "question_staging"
-  useGame.setState(newRound ? { room, myAnswer: null, myAnswerId: null, myVote: null } : { room })
+  const prevPhase = useGame.getState().room?.phase
+
+  // A new writing phase starting = new round: forget last round's answer/vote and snapshot everyone's score
+  if (room.phase === "question_staging" && prevPhase !== "question_staging") {
+    const roundStartScores = Object.fromEntries(Object.values(room.players).map((p) => [p.id, p.score]))
+    useGame.setState({ room, myAnswer: null, myVote: null, roundStartScores })
+    return
+  }
+
+  useGame.setState({ room })
 })
