@@ -11,7 +11,7 @@ import { create } from "zustand"
 import { call, socket, type Ack } from "@/lib/socket"
 
 // Game length — must match the `round > 5` check in host:next_round (server/main.py)
-export const TOTAL_ROUNDS = 5
+export const TOTAL_ROUNDS = 1
 // Phase lengths in seconds — must match WRITE_SECONDS / VOTE_SECONDS in server/main.py (used to size the timer bar)
 export const WRITE_SECONDS = 45
 export const VOTE_SECONDS = 30

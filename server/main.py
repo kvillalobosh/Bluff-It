@@ -18,7 +18,7 @@ WRITE_SECONDS = 45
 VOTE_SECONDS = 30
 
 # Rounds per game — must match TOTAL_ROUNDS in client/src/store/game.ts
-TOTAL_ROUNDS = 5
+TOTAL_ROUNDS = 1
 
 # a dictionary to hold all the active rooms
 # key: 4-letter room code
@@ -465,7 +465,7 @@ async def handle_start_next_round(sid, data:dict):
     room["round"] += 1
 
     # check if we reached the end of the game (five rounds)
-    if room["round"] > 5:
+    if room["round"] > 1:
         room["phase"] = "end_screen"
     else:
         room["phase"] = "leaderboard_view"
