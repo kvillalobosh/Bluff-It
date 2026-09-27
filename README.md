@@ -1,15 +1,15 @@
 ```markdown
 # 🃏 Bluff Trivia Game
 
-A browser-based, Kahoot/Jackbox-style party game where players submit fake answers to trivia questions to fool each other[cite: 1]. One host screen displays the game room, while 3–8 players join from their phones using a 4-letter room code[cite: 1].
+A browser-based, Kahoot/Jackbox-style party game where players submit fake answers to trivia questions to fool each other. One host screen displays the game room, while 3–8 players join from their phones using a 4-letter room code.
 
-Built for ShellHacks 2026[cite: 1, 4].
+Built for ShellHacks 2026.
 
 ---
 
 ## 🏗️ Project Architecture
 
-The repository is structured as a monorepo containing both the frontend and backend[cite: 1]:
+The repository is structured as a monorepo containing both the frontend and backend:
 
 ```text
 ├── client/          # Frontend (React + Vite + TypeScript + Tailwind CSS)
@@ -205,9 +205,6 @@ The server acts as the single source of truth. Client-server communication relie
 
 
 * **Question Bank:** Static JSON bank located at `server/questions.json`.
-
-
-* **Deployment:** Frontend hosted on Vercel; Game server deployed on Render/Railway.
 
 
 

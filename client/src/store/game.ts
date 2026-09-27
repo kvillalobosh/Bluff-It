@@ -27,18 +27,23 @@ export type Player = {
   has_voted: boolean // voted this round
 }
 
+export type Choice = {
+  id: string
+  text: string
+}
+
 export type RoomState = {
   // "lobby" | "leaderboard_view" | "question_staging" | "question_voting" | "results" | "end_screen"
   phase: string
   round: number // 1-5; the server increments it on host:next_round
   players: Record<string, Player> // keyed by sid
   question: string | null
-  choices: string[]
+  choices: Choice[]
   deadline: number | null // unix seconds when the current phase's timer ends (write / vote)
   // Only sent during "results"
   real_answer?: string
   round_answers?: Record<string, string> // sid -> fake text
-  round_votes?: Record<string, string> // sid -> chosen text
+  round_votes?: Record<string, string> // sid -> chosen choice id
 }
 
 type GameStore = {
@@ -48,6 +53,7 @@ type GameStore = {
   code: string | null // room code this tab belongs to
   room: RoomState | null // latest state:update payload from the server
   myAnswer: string | null // this player's fake for the current round (so voting can hide it later)
+  myAnswerId: string | null // stable id for this player's submitted fake answer, so duplicates remain distinct
   myVote: string | null // the choice this player voted for this round
   roundStartScores: Record<string, number> | null // sid -> score when the current round began (leaderboard counts up from here)
 
@@ -57,7 +63,7 @@ type GameStore = {
   startGame: () => Promise<Ack> // host:start_game -> { success } or throws
   beginRound: () => Promise<Ack> // host:begin_question_staging -> { success } or throws
   submitAnswer: (answer: string) => Promise<Ack> // player:answer_created -> { success } or throws
-  submitVote: (choice: string) => Promise<Ack> // player:submit_vote -> { success } or throws
+  submitVote: (choiceId: string) => Promise<Ack> // player:submit_vote -> { success } or throws
   nextRound: () => Promise<Ack> // host:next_round -> back to leaderboard_view (or end_screen after the last round)
 }
 
@@ -70,6 +76,7 @@ export const useGame = create<GameStore>((set, get) => ({
   code: null,
   room: null, // no room until the server sends a state:update
   myAnswer: null,
+  myAnswerId: null,
   myVote: null,
   roundStartScores: null,
 
@@ -77,8 +84,14 @@ export const useGame = create<GameStore>((set, get) => ({
   // Room data only arrives via state:update.
   createRoom: async () => {
     const res = await call("host:create")
+    const roomCode = res.room_code as string
+    const hostToken = typeof res.host_token === "string" ? res.host_token : null
+
+    sessionStorage.setItem("host_room_code", roomCode)
+    if (hostToken) sessionStorage.setItem("host_token", hostToken)
+
     // Remember we're the host of this room so App.tsx can show the lobby
-    set({ role: "host", code: res.room_code as string })
+    set({ role: "host", code: roomCode })
     return res
   },
   joinRoom: async (code, name) => {
@@ -92,20 +105,47 @@ export const useGame = create<GameStore>((set, get) => ({
   submitAnswer: async (answer) => {
     const res = await call("player:answer_created", { code: get().code, answer })
     // Only remember it once the server accepted it (e.g. not rejected for matching the real answer)
-    set({ myAnswer: answer })
+    set({ myAnswer: answer, myAnswerId: typeof res.choice_id === "string" ? res.choice_id : null })
     return res
   },
-  submitVote: async (choice) => {
-    const res = await call("player:submit_vote", { code: get().code, choice })
-    set({ myVote: choice })
+  submitVote: async (choiceId) => {
+    const res = await call("player:submit_vote", { code: get().code, choice_id: choiceId })
+    set({ myVote: choiceId })
     return res
   },
   nextRound: () => call("host:next_round", { code: get().code }),
 }))
 
 // Socket listeners: copy server events into the store.
-socket.on("connect", () => useGame.setState({ connected: true }))
 socket.on("disconnect", () => useGame.setState({ connected: false }))
+socket.on("connect", async () => {
+  useGame.setState({ connected: true })
+
+  // Only restore a host session if we are truly reconnecting to an existing room,
+  // not when the user is simply creating a fresh room in this tab.
+  if (useGame.getState().role !== null) return
+
+  const savedCode = sessionStorage.getItem("host_room_code")
+  const savedToken = sessionStorage.getItem("host_token")
+
+  if (!savedCode || !savedToken) return
+
+  socket.emit(
+    "host:reconnect",
+    { code: savedCode, host_token: savedToken },
+    (res: { success: boolean; state?: any; error?: string }) => {
+      if (res.success) {
+        useGame.setState({
+          role: "host",
+          code: savedCode,
+          room: res.state,
+        })
+      } else {
+        sessionStorage.clear()
+      }
+    }
+  )
+})
 
 // Broadcast to everyone in the room whenever the room changes (player joins, phase changes, etc.)
 socket.on("state:update", (room: RoomState) => {

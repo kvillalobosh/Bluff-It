@@ -1,33 +1,47 @@
 import { useState } from "react"
-import { ChartNoAxesColumn } from "lucide-react"
+import { motion } from "motion/react"
+import star from "@/assets/star-icon.png"
+import { Avatar } from "@/components/Avatar"
+import { TopNav } from "@/components/ui/TopNav"
 import { Button } from "@/components/ui/button"
 import { centerIndex, toRows } from "@/lib/layout"
 import { useGame } from "@/store/game"
 
 type Card = {
+  choiceId: string
   choice: string
   isReal: boolean
-  author: string | null // who wrote this fake (null for the real answer)
-  pickedBy: string[] // names of players who voted for it
+  author: string | null
+  authorId: string | null
+  pickedBy: string[]
+  pickedByIds: string[]
 }
 
 // Host screen while phase === "results": every answer card with who wrote it and who fell for it.
 export function HostResults() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { room, nextRound } = useGame()
+  const { code, room, nextRound } = useGame()
   if (!room) return null
 
   const answers = room.round_answers ?? {} // sid -> fake text
-  const votes = room.round_votes ?? {} // sid -> chosen text
+  const votes = room.round_votes ?? {} // sid -> chosen choice id
   const nameOf = (sid: string) => room.players[sid]?.name ?? "?"
 
   const allCards: Card[] = room.choices.map((choice) => {
-    const isReal = choice === room.real_answer
-    // Same lookup the server uses for scoring: first player whose fake matches this text
-    const authorSid = isReal ? undefined : Object.keys(answers).find((sid) => answers[sid] === choice)
-    const pickedBy = Object.keys(votes).filter((sid) => votes[sid] === choice).map(nameOf)
-    return { choice, isReal, author: authorSid ? nameOf(authorSid) : null, pickedBy }
+    const isReal = choice.text === room.real_answer
+    const authorSid = isReal ? undefined : Object.keys(answers).find((sid) => answers[sid] === choice.text)
+    const pickedByIds = Object.keys(votes).filter((sid) => votes[sid] === choice.id)
+    const pickedBy = pickedByIds.map(nameOf)
+    return {
+      choiceId: choice.id,
+      choice: choice.text,
+      isReal,
+      author: authorSid ? nameOf(authorSid) : null,
+      authorId: authorSid ?? null,
+      pickedBy,
+      pickedByIds,
+    }
   })
 
   // Put the real answer in the center slot (middle of the middle row), fakes around it
@@ -48,63 +62,94 @@ export function HostResults() {
   }
 
   return (
-    <div className="flex min-h-svh w-full flex-col">
-      {/* Centered vertically on the full screen (teammate's navbar will sit above this) */}
-      <main className="flex flex-1 flex-col items-center justify-center gap-8 px-8 py-8">
-        <div className="rounded-full border-2 border-foreground px-12 py-3">
-          <p className="text-5xl font-black">ROUND {room.round} RESULTS</p>
+    <div className="host-results-screen">
+      <TopNav leftText={`ROUND ${room.round}`} rightText={`CODE: ${code ?? ""}`} />
+
+      <main className="host-results-main">
+        <div className="host-results-header">
+          <span>ROUND {room.round} RESULTS</span>
         </div>
 
-        {/* Rows sized by rowSizes(): ≤5 -> one row, 7 -> 3/4, 8 -> 4/4, 9 -> 3/3/3 — each row centered */}
-        <div className="flex w-full flex-col gap-4">
+        <div className="host-results-grid">
           {toRows(cards).map((row, i) => (
-            <div key={i} className="flex items-center justify-center gap-4">
+            <div key={i} className="host-results-row">
               {row.map((card) => (
-                <ResultCard key={card.choice} card={card} />
+                <ResultCard key={card.choiceId} card={card} room={room} />
               ))}
             </div>
           ))}
         </div>
 
-        <Button
-          size="lg"
-          variant="outline"
-          className="h-20 w-full max-w-xl rounded-full border-4 border-foreground text-3xl font-black"
-          disabled={busy}
-          onClick={onLeaderboard}
-        >
-          <ChartNoAxesColumn className="size-8" /> LEADERBOARD
+        <Button size="lg" className="host-lobby-start" disabled={busy} onClick={onLeaderboard}>
+          <span className="host-lobby-start-icon">▶</span>
+          LEADERBOARD
         </Button>
-        {error && <p className="text-center text-sm font-medium text-red-600">{error}</p>}
+
+        {error && <p className="host-lobby-error">{error}</p>}
       </main>
     </div>
   )
 }
 
-function ResultCard({ card }: { card: Card }) {
+function ResultCard({ card, room }: { card: Card; room: any }) {
   if (card.isReal) {
     return (
-      <div className="flex w-full max-w-60 scale-105 flex-col items-center gap-2 rounded-2xl border-4 border-foreground p-5 text-center">
-        <p className="text-xl font-black">{card.choice.toLowerCase()}</p>
-        <span className="rounded-md bg-green-300 px-2 font-bold text-black">CORRECT</span>
+      <motion.div
+        className="result-card result-card--real"
+        initial={{ opacity: 0.55, scale: 0.94, y: 12 }}
+        animate={{ opacity: 1, scale: [0.98, 1.08, 1.04], y: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        <div className="result-card-sparkles" aria-hidden="true">
+          {[...Array(6)].map((_, i) => (
+            <motion.img
+              key={i}
+              src={star}
+              alt=""
+              className="result-card-sparkle"
+              style={{
+                left: `${16 + i * 13}%`,
+                top: `${12 + (i % 3) * 22}%`,
+              }}
+              initial={{ opacity: 0, scale: 0.5, rotate: -30 }}
+              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.7], rotate: [0, 25, -10] }}
+              transition={{ duration: 1.6, delay: i * 0.12, repeat: Infinity, repeatDelay: 1.2 }}
+            />
+          ))}
+        </div>
+
+        <p className="result-card-text result-card-text--real">{card.choice.toLowerCase()}</p>
+        <span className="result-card-badge">CORRECT</span>
+
         {card.pickedBy.length === 0 ? (
-          <p className="text-sm">No one found it</p>
+          <p className="result-card-meta">No one found it</p>
         ) : (
-          card.pickedBy.map((name) => (
-            <p key={name} className="font-bold">
-              {name} +1000
-            </p>
-          ))
+          <div className="result-card-picks-row">
+            {card.pickedByIds.map((sid) => {
+              const player = room.players[sid]
+              if (!player) return null
+              return (
+                <div key={sid} className="result-card-player-mini">
+                  <Avatar avatar={player.avatar} name={player.name} className="result-card-avatar-mini" />
+                  <span>{player.name}</span>
+                  <span className="result-card-pick-score">+1000</span>
+                </div>
+              )
+            })}
+          </div>
         )}
-      </div>
+      </motion.div>
     )
   }
 
   return (
-    <div className="flex w-full max-w-52 flex-col items-center gap-1 rounded-2xl border-2 border-foreground p-4 text-center">
-      <p className="text-lg font-black">{card.choice.toLowerCase()}</p>
-      <p className="text-sm">Written by {card.author ?? "?"}</p>
-      <p className="text-sm font-semibold">
+    <div className="result-card result-card--fake">
+      <div className="result-card-author-row">
+        <Avatar avatar={card.authorId ? room.players[card.authorId]?.avatar : undefined} name={card.author ?? "?"} className="result-card-avatar" />
+      </div>
+      <p className="result-card-text">{card.choice.toLowerCase()}</p>
+      <p className="result-card-meta">Written by {card.author ?? "?"}</p>
+      <p className="result-card-pickline">
         {card.pickedBy.length === 0
           ? "No one fooled"
           : `Fooled ${card.pickedBy.join(", ")} +${500 * card.pickedBy.length}`}

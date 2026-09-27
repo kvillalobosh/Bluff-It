@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { TopNav } from "@/components/ui/TopNav"
 import { WaitingDots } from "@/components/ui/WaitingDots"
 import { Countdown } from "@/components/Countdown"
@@ -6,7 +6,7 @@ import { socket } from "@/lib/socket"
 import { useCountdown } from "@/lib/useCountdown"
 import { VOTE_SECONDS, useGame } from "@/store/game"
 
-// Shown on the "locked in" screen — one picked at random per round
+// Shown on the "locked in" screen — one picked once per round and kept stable until the round changes.
 const SUSPENSE_LINES = [
   "Locked in… no take-backs.",
   "Your fate is sealed.",
@@ -19,19 +19,28 @@ const SUSPENSE_LINES = [
 export function PlayerVote() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { code, room, myAnswer, myVote, submitVote } = useGame()
+  const [suspense, setSuspense] = useState(SUSPENSE_LINES[0])
+  const { code, room, myAnswer, myAnswerId, myVote, submitVote } = useGame()
   const remaining = useCountdown(room?.deadline)
   if (!room) return null
 
-  const suspense = SUSPENSE_LINES[Math.floor(Math.random() * SUSPENSE_LINES.length)]
+  useEffect(() => {
+    setSuspense(SUSPENSE_LINES[Math.floor(Math.random() * SUSPENSE_LINES.length)])
+  }, [room.round])
+
   const me = socket.id ? room.players[socket.id] : undefined
   const timeUp = remaining === 0
+  const myVoteChoice = room.choices.find((choice) => choice.id === myVote)
+  const isOwnChoice = (choice: { id: string; text: string }) => {
+    if (myAnswerId) return choice.id === myAnswerId
+    return choice.text === myAnswer
+  }
 
-  const onVote = async (choice: string) => {
+  const onVote = async (choiceId: string) => {
     setBusy(true)
     setError(null)
     try {
-      await submitVote(choice)
+      await submitVote(choiceId)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -47,7 +56,7 @@ export function PlayerVote() {
 
         <div className="player-result-card">
           <p className="player-result-title">{suspense}</p>
-          {myVote && <p className="player-vote-picked">You picked “{myVote.toLowerCase()}”</p>}
+          {myVoteChoice && <p className="player-vote-picked">You picked “{myVoteChoice.text.toLowerCase()}”</p>}
           <WaitingDots />
         </div>
       </div>
@@ -62,16 +71,16 @@ export function PlayerVote() {
 
       <div className="player-vote-grid">
         {room.choices
-          .filter((c) => c !== myAnswer)
+          .filter((choice) => !isOwnChoice(choice))
           .map((choice) => (
             <button
-              key={choice}
+              key={choice.id}
               type="button"
               className="player-vote-choice"
               disabled={busy || timeUp}
-              onClick={() => onVote(choice)}
+              onClick={() => onVote(choice.id)}
             >
-              {choice.toLowerCase()}
+              {choice.text.toLowerCase()}
             </button>
           ))}
       </div>
