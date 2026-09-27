@@ -29,8 +29,8 @@ export function QuestionVoting() {
           {/* Real answer + every player's fake, already shuffled by the server (up to 8 players + 1 real = 9) */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {room.choices.map((choice) => (
-              <div key={choice} className="flex min-h-20 items-center justify-center rounded-xl border p-3 text-center font-medium">
-                {choice.toLowerCase()}
+              <div key={choice.id} className="flex min-h-20 items-center justify-center rounded-xl border p-3 text-center font-medium">
+                {choice.text.toLowerCase()}
               </div>
             ))}
           </div>

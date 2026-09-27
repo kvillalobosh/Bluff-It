@@ -1,6 +1,8 @@
 # imports!
 import random
+import secrets
 import string
+import uuid
 import socketio
 from questions import get_random_question
 import asyncio
@@ -20,6 +22,7 @@ rooms = {}
 """
 rooms[code] = {
     "host_sid": sid,
+    "host_token": host_token,
     "phase": "lobby",
     "round": 1,
     "players": {
@@ -144,27 +147,38 @@ async def transition_to_vote(code: str):
 
     room["phase"] = "question_voting"
 
-    # 1. Collect all choices: the real answer + whatever fake answers were submitted
-    all_choices = [room["current_question"]["real_answer"]]
-    for fake_text in room["round_answers"].values():
-        if fake_text not in all_choices:  # Avoid duplicate cards on screen
-            all_choices.append(fake_text)
+    # Store choices as structured objects internally:
+    # { "id": "uuid-str", "text": "Banana", "author_sid": sid_or_None }
+    choices = [
+        {
+            "id": str(uuid.uuid4())[:8],
+            "text": room["current_question"]["real_answer"],
+            "author_sid": None,  # None means real answer
+        }
+    ]
 
-    # 2. Shuffle them so the real answer isn't always choice #1
-    random.shuffle(all_choices)
+    for sid, fake_text in room["round_answers"].items():
+        choices.append({
+            "id": room.get("answer_choice_ids", {}).get(sid, str(uuid.uuid4())[:8]),
+            "text": fake_text,
+            "author_sid": sid,
+        })
 
-    # 3. Store the public list (just strings or id/text pairs, NO player SIDs attached!)
-    room["shuffled_choices"] = all_choices
+    random.shuffle(choices)
+    room["raw_choices"] = choices
+
+    # Strip author_sid from the public payload so clients can't cheat via inspect element
+    room["shuffled_choices"] = [{"id": c["id"], "text": c["text"]} for c in choices]
     room["deadline"] = time.time() + 30
 
     # 4. Broadcast the new voting phase and the options to everyone
     public_state = get_public_room_state(room)
     await sio.emit("state:update", public_state, room=code)
 
-    # 5. Start the voting timer
+    # 5. Start the voting timer. It must match the client countdown duration.
     if room.get("timer_task"):
         room["timer_task"].cancel()
-    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=45))
+    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=30))
 
 # timer for question staging
 async def write_phase_timer(code: str, seconds: int = 45):
@@ -180,7 +194,7 @@ async def write_phase_timer(code: str, seconds: int = 45):
 # timer for question answering
 async def vote_phase_timer(code: str, seconds: int = 30):
     try:
-        # Sleep for the duration of the question (e.g., 30s)
+        # Must match the client-side vote duration shown in Countdown / VOTE_SECONDS.
         await asyncio.sleep(seconds)
         # If not canceled, time ran out -> advance to results page
         await transition_to_results(code)
@@ -193,26 +207,28 @@ async def transition_to_results(code: str):
     if code not in rooms:
         return
     room = rooms[code]
-
     if room["phase"] == "results":
         return
     room["phase"] = "results"
 
-    # award points
-    real_answer = room["current_question"]["real_answer"]
-    for voter_sid, vote_choice in room.get("round_votes", {}).items():
-        if vote_choice == real_answer:
-            # Player voted for the correct answer
-            room["players"][voter_sid]["score"] += 1000
-        else:
-            # Player voted for a fake answer, find the answer owner and award 500
-            for author_sid, answer_text in room.get("round_answers", {}).items():
-                if answer_text == vote_choice:
-                    if author_sid in room["players"]:
-                        room["players"][author_sid]["score"] += 500
-                    break # found the author, no need to keep looping
+    # Map choice ID to choice data for O(1) lookups
+    choices_by_id = {c["id"]: c for c in room.get("raw_choices", [])}
 
-    # Broadcast the new phase
+    for voter_sid, choice_id in room.get("round_votes", {}).items():
+        chosen = choices_by_id.get(choice_id)
+        if not chosen:
+            continue
+
+        if chosen["author_sid"] is None:
+            # Player voted for the real answer
+            if voter_sid in room["players"]:
+                room["players"][voter_sid]["score"] += 1000
+        else:
+            # Player voted for a specific player's fake answer card
+            author_sid = chosen["author_sid"]
+            if author_sid in room["players"]:
+                room["players"][author_sid]["score"] += 500
+
     public_state = get_public_room_state(room)
     await sio.emit("state:update", public_state, room=code)
 
@@ -225,19 +241,24 @@ async def handle_create_room(sid):
     while code in rooms:
         code = "".join(random.choices(string.ascii_uppercase, k=4))
 
+    host_token = secrets.token_hex(16)  # Secret handshake token for host reconnection
+
     # add to socketio room
     await sio.enter_room(sid, code)
 
     # store it into the rooms dictionary
     rooms[code] = {
         "host_sid": sid,
+        "host_token": host_token,
         "phase": "lobby",
         "round": 1,
         "players": {},
         "current_question": None,
         "round_answers": {},
         "round_votes": {},
-        "shuffled_choices": []
+        "shuffled_choices": [],
+        "answer_choice_ids": {},
+        "raw_choices": []
     }
 
     print(f"Room {code} created successfully by host {sid}")
@@ -246,7 +267,30 @@ async def handle_create_room(sid):
     public_state = get_public_room_state(rooms[code])
     await sio.emit("state:update", public_state, room=code)
 
-    return {"room_code": code}
+    return {"room_code": code, "host_token": host_token}
+
+@sio.on("host:reconnect")
+async def handle_host_reconnect(sid, data: dict):
+    code = data.get("code", "").upper().strip()
+    token = data.get("host_token")
+
+    if not code or code not in rooms:
+        return {"success": False, "error": f"Room '{code}' not found."}
+
+    room = rooms[code]
+
+    # Verify the secret handshake from the saved host token, not the socket id.
+    # The host socket id changes on refresh, but the token stays the same.
+    if room.get("host_token") != token:
+        return {"success": False, "error": "Unauthorized host-to-room reconnection."}
+
+    # Re-assign the host sid and join the Socket.IO room group.
+    room["host_sid"] = sid
+    await sio.enter_room(sid, code)
+
+    # Send the fresh room state straight back to the host UI
+    public_state = get_public_room_state(room)
+    return {"success": True, "state": public_state}
 
 # user hits "join room" and client broadcasts "player:join_room" signal
 # server checks code and name before adding player to the correct room
@@ -345,6 +389,8 @@ async def handle_start_question_staging(sid, data: dict):
     room["current_question"] = get_random_question()
     room["round_answers"] = {}
     room["round_votes"] = {}
+    room["answer_choice_ids"] = {}
+    room["raw_choices"] = []
 
     # Cancel any lingering prior timer
     if room.get("timer_task"):
@@ -385,7 +431,9 @@ async def handle_answer_creation(sid, data: dict):
     if sid in room["round_answers"]:
         return {"success": False, "error": "You have already submitted an answer."}
 
-    # 5. Save the answer privately on the server
+    # 5. Save the answer privately on the server and assign a stable choice id
+    choice_id = room.get("answer_choice_ids", {}).get(sid, str(uuid.uuid4())[:8])
+    room["answer_choice_ids"][sid] = choice_id
     room["round_answers"][sid] = answer_text
 
     # 6. Inform everyone that a player has locked in (without leaking text)
@@ -403,12 +451,12 @@ async def handle_answer_creation(sid, data: dict):
         # 2. Advance to vote immediately
         await transition_to_vote(code)
 
-    return {"success": True}
+    return {"success": True, "choice_id": choice_id}
 
 @sio.on("player:submit_vote")
 async def handle_submit_vote(sid, data: dict):
     code = data.get("code", "").upper().strip()
-    vote_choice = data.get("choice")
+    choice_id = data.get("choice_id")
 
     # 1. Validate room and player
     room, player, error = get_room_or_error_player(code, player_sid=sid)
@@ -423,12 +471,17 @@ async def handle_submit_vote(sid, data: dict):
     if sid in room["round_votes"]:
         return {"success": False, "error": "You have already voted."}
 
-    # 4. Guard: Ensure they are voting for an actual choice
-    if vote_choice not in room["shuffled_choices"]:
+    # Find the choice by its ID
+    chosen = next((c for c in room.get("raw_choices", []) if c["id"] == choice_id), None)
+    if not chosen:
         return {"success": False, "error": "Invalid choice."}
 
-    # 5. Save the vote privately on the server
-    room["round_votes"][sid] = vote_choice
+    # Optional: Block players from voting for their own answer card
+    if chosen["author_sid"] == sid:
+        return {"success": False, "error": "You cannot vote for your own answer!"}
+
+    # Store the choice_id as the player's vote
+    room["round_votes"][sid] = choice_id
 
     # 6. Optional: update clients so they know someone locked in
     public_state = get_public_room_state(room)
@@ -465,6 +518,8 @@ async def handle_start_next_round(sid, data:dict):
         room["round_answers"] = {}
         room["round_votes"] = {}
         room["shuffled_choices"] = []
+        room["answer_choice_ids"] = {}
+        room["raw_choices"] = []
 
     # broadcast updated state
     public_state = get_public_room_state(room)

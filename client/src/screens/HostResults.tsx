@@ -5,6 +5,7 @@ import { centerIndex, toRows } from "@/lib/layout"
 import { useGame } from "@/store/game"
 
 type Card = {
+  choiceId: string
   choice: string
   isReal: boolean
   author: string | null // who wrote this fake (null for the real answer)
@@ -19,15 +20,15 @@ export function HostResults() {
   if (!room) return null
 
   const answers = room.round_answers ?? {} // sid -> fake text
-  const votes = room.round_votes ?? {} // sid -> chosen text
+  const votes = room.round_votes ?? {} // sid -> chosen choice id
   const nameOf = (sid: string) => room.players[sid]?.name ?? "?"
 
   const allCards: Card[] = room.choices.map((choice) => {
-    const isReal = choice === room.real_answer
+    const isReal = choice.text === room.real_answer
     // Same lookup the server uses for scoring: first player whose fake matches this text
-    const authorSid = isReal ? undefined : Object.keys(answers).find((sid) => answers[sid] === choice)
-    const pickedBy = Object.keys(votes).filter((sid) => votes[sid] === choice).map(nameOf)
-    return { choice, isReal, author: authorSid ? nameOf(authorSid) : null, pickedBy }
+    const authorSid = isReal ? undefined : Object.keys(answers).find((sid) => answers[sid] === choice.text)
+    const pickedBy = Object.keys(votes).filter((sid) => votes[sid] === choice.id).map(nameOf)
+    return { choiceId: choice.id, choice: choice.text, isReal, author: authorSid ? nameOf(authorSid) : null, pickedBy }
   })
 
   // Put the real answer in the center slot (middle of the middle row), fakes around it
@@ -60,7 +61,7 @@ export function HostResults() {
           {toRows(cards).map((row, i) => (
             <div key={i} className="flex items-center justify-center gap-4">
               {row.map((card) => (
-                <ResultCard key={card.choice} card={card} />
+                <ResultCard key={card.choiceId} card={card} />
               ))}
             </div>
           ))}
