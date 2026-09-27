@@ -1,10 +1,9 @@
-import { useCountdown } from "@/lib/useCountdown"
-import { useGame } from "@/store/game"
+import { Countdown } from "@/components/Countdown"
+import { WRITE_SECONDS, useGame } from "@/store/game"
 
 // Host screen while phase === "question_staging": players are writing their fake answers.
 export function QuestionStaging() {
   const room = useGame((s) => s.room)
-  const secondsLeft = useCountdown(room?.deadline)
   if (!room) return null
 
   const players = Object.values(room.players)
@@ -15,12 +14,7 @@ export function QuestionStaging() {
   return (
     <div className="mx-auto flex min-h-svh max-w-4xl flex-col justify-center gap-6 px-4 py-6">
       {/* Timer above both cards */}
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">Round {room.round} · Write a fake answer!</p>
-        <div className={`font-mono text-6xl font-black ${secondsLeft !== null && secondsLeft <= 10 ? "text-red-600" : ""}`}>
-          {secondsLeft ?? "--"}
-        </div>
-      </div>
+      <Countdown deadline={room.deadline} total={WRITE_SECONDS} label={`Round ${room.round} · Write a fake answer!`} />
 
       <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
         {/* Left: the question */}

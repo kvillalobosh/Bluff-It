@@ -1,9 +1,15 @@
 import "./App.css"
+import { FinalLeaderboard } from "@/screens/FinalLeaderboard"
 import { Home } from "@/screens/Home"
 import { HostLobby } from "@/screens/HostLobby"
+import { HostResults } from "@/screens/HostResults"
 import { Leaderboard } from "@/screens/Leaderboard"
+import { PlayerAnswer } from "@/screens/PlayerAnswer"
 import { PlayerLobby } from "@/screens/PlayerLobby"
+import { PlayerResult } from "@/screens/PlayerResult"
+import { PlayerVote } from "@/screens/PlayerVote"
 import { QuestionStaging } from "@/screens/QuestionStaging"
+import { QuestionVoting } from "@/screens/QuestionVoting"
 import { useGame } from "@/store/game"
 
 function App() {
@@ -20,8 +26,13 @@ function App() {
     case "leaderboard_view":
       return <Leaderboard />
     case "question_staging":
-      // Players still need their own "write a fake" screen — placeholder for now
-      return role === "host" ? <QuestionStaging /> : <Placeholder role={role} phase={phase} />
+      return role === "host" ? <QuestionStaging /> : <PlayerAnswer />
+    case "question_voting":
+      return role === "host" ? <QuestionVoting /> : <PlayerVote />
+    case "results":
+      return role === "host" ? <HostResults /> : <PlayerResult />
+    case "end_screen":
+      return <FinalLeaderboard />
     default:
       return <Placeholder role={role} phase={phase} />
   }

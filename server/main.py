@@ -27,7 +27,8 @@ rooms[code] = {
             "id": sid
             "name": name,
             "score": 0,
-            "connected": True
+            "connected": True,
+            "avatar": avatar
         }
     },
     # Round-specific server data
@@ -134,7 +135,7 @@ async def transition_to_vote(code: str):
 
     # 3. Store the public list (just strings or id/text pairs, NO player SIDs attached!)
     room["shuffled_choices"] = all_choices
-    room["deadline"] = time.time() + 45
+    room["deadline"] = time.time() + 30
 
     # 4. Broadcast the new voting phase and the options to everyone
     public_state = get_public_room_state(room)
@@ -143,7 +144,7 @@ async def transition_to_vote(code: str):
     # 5. Start the voting timer
     if room.get("timer_task"):
         room["timer_task"].cancel()
-    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=45))
+    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=30))
 
 # timer for question staging
 async def write_phase_timer(code: str, seconds: int = 45):
@@ -434,7 +435,7 @@ async def handle_start_next_round(sid, data:dict):
     room["round"] += 1
 
     # check if we reached the end of the game (five rounds)
-    if room["round"] > 5:
+    if room["round"] > 1:
         room["phase"] = "end_screen"
     else:
         room["phase"] = "leaderboard_view"
