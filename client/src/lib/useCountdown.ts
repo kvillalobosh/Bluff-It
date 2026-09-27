@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
-// Seconds left until `deadline` (unix seconds from the server), ticking down locally.
-// Returns null when there's no deadline.
+// Seconds left (with decimals) until `deadline` (unix seconds from the server), ticking down locally.
+// Returns null when there's no deadline, and never goes below 0.
 export function useCountdown(deadline: number | null | undefined) {
   const [now, setNow] = useState(() => Date.now())
 
@@ -12,5 +12,5 @@ export function useCountdown(deadline: number | null | undefined) {
   }, [deadline])
 
   if (!deadline) return null
-  return Math.max(0, Math.ceil(deadline - now / 1000))
+  return Math.max(0, deadline - now / 1000)
 }
