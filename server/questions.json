@@ -2,251 +2,126 @@
   {
     "id": 1,
     "question": "What animal has fingerprints so similar to humans that they can potentially confuse forensic investigators?",
-    "real_answer": "Koala"
+    "real_answer": "koala"
   },
   {
     "id": 2,
-    "question": "What animal has three hearts and blue blood?",
-    "real_answer": "Octopus"
+    "question": "What animal produces cube-shaped feces?",
+    "real_answer": "wombat"
   },
   {
     "id": 3,
-    "question": "What mammal lays eggs instead of giving birth to live young?",
-    "real_answer": "Platypus"
+    "question": "What animal can survive being frozen for months and then thaw out and continue living?",
+    "real_answer": "wood frog"
   },
   {
     "id": 4,
-    "question": "What animal produces cube-shaped feces?",
-    "real_answer": "Wombat"
+    "question": "What animal's heart can weigh more than 1,000 pounds?",
+    "real_answer": "blue whale"
   },
   {
     "id": 5,
-    "question": "What animal can survive being frozen for months and then thaw out and continue living?",
-    "real_answer": "Wood frog"
+    "question": "What animal can sleep with one half of its brain awake?",
+    "real_answer": "dolphin"
   },
   {
     "id": 6,
-    "question": "What animal has a tongue that can be longer than its entire body?",
-    "real_answer": "Chameleon"
+    "question": "What animal's milk has been described as naturally pink?",
+    "real_answer": "hippo"
   },
   {
     "id": 7,
-    "question": "What animal's heart can weigh more than 1,000 pounds?",
-    "real_answer": "Blue whale"
+    "question": "What bird lays eggs that are naturally dark green?",
+    "real_answer": "emu"
   },
   {
     "id": 8,
-    "question": "What animal has the largest eyes of any known animal?",
-    "real_answer": "Giant squid"
+    "question": "What animal has a stomach acid strong enough to dissolve bones?",
+    "real_answer": "vulture"
   },
   {
     "id": 9,
-    "question": "What animal can taste using receptors located on its feet?",
-    "real_answer": "Butterfly"
+    "question": "What animal's poop is used by some birds as nesting material because it helps keep parasites away?",
+    "real_answer": "cattle"
   },
   {
     "id": 10,
-    "question": "What animal has teeth that never stop growing throughout its life?",
-    "real_answer": "Beaver"
+    "question": "What animal sleeps while holding hands with other members of its group so it does not drift away?",
+    "real_answer": "sea otter"
   },
   {
     "id": 11,
-    "question": "What animal can regenerate lost limbs and even repair parts of its heart and brain?",
-    "real_answer": "Axolotl"
+    "question": "Which sovereign nation spans twelve distinct time zones, the most of any country in the world?",
+    "real_answer": "france"
   },
   {
     "id": 12,
-    "question": "What animal can turn its stomach inside out to digest food outside its body?",
-    "real_answer": "Starfish"
+    "question": "Which city hosted the very first performance of Ludwig van Beethoven's Ninth Symphony in 1824?",
+    "real_answer": "vienna"
   },
   {
     "id": 13,
-    "question": "What animal can walk across the surface of water using its feet?",
-    "real_answer": "Basilisk lizard"
+    "question": "Which European capital is the real-world birthplace of actor Keanu Reeves?",
+    "real_answer": "beirut"
   },
   {
     "id": 14,
-    "question": "What animal has a second brain-like cluster of neurons that helps control its arms?",
-    "real_answer": "Octopus"
+    "question": "On which Apollo mission did an astronaut hit two golf balls on the surface of the Moon?",
+    "real_answer": "apollo 14"
   },
   {
     "id": 15,
-    "question": "What animal can sleep with one half of its brain awake?",
-    "real_answer": "Dolphin"
+    "question": "What specific mammal was the very first animal to successfully navigate the original Panama Canal on its opening transit in 1914?",
+    "real_answer": "dog"
   },
   {
     "id": 16,
-    "question": "What animal's milk has been described as naturally pink?",
-    "real_answer": "Hippopotamus"
+    "question": "What instrument did Albert Einstein regularly play to help clear his mind while working through physics problems?",
+    "real_answer": "violin"
   },
   {
     "id": 17,
-    "question": "What animal cannot jump despite being one of the largest land animals?",
-    "real_answer": "Elephant"
+    "question": "Which animal was the first living vertebrate creature ever successfully genetically cloned?",
+    "real_answer": "sheep"
   },
   {
     "id": 18,
-    "question": "What animal is capable of producing electricity strong enough to stun prey?",
-    "real_answer": "Electric eel"
+    "question": "Which board game was officially licensed by the British Secret Service during World War II to smuggle escape maps and compasses to POWs?",
+    "real_answer": "monopoly"
   },
   {
     "id": 19,
-    "question": "What animal has a transparent eyelid that helps protect its eyes underwater?",
-    "real_answer": "Shark"
+    "question": "What brand of soda sponsored the first commercial advertisement filmed in outer space aboard the Mir space station?",
+    "real_answer": "pepsi"
   },
   {
     "id": 20,
-    "question": "What animal can rotate its head about 270 degrees without cutting off its blood supply?",
-    "real_answer": "Owl"
+    "question": "Which international port was the original destination of the Titanic before it struck an iceberg on its maiden voyage?",
+    "real_answer": "new york"
   },
   {
     "id": 21,
-    "question": "What animal has blue blood because its blood uses copper instead of iron to carry oxygen?",
-    "real_answer": "Horseshoe crab"
+    "question": "What kind of pet animal was famously kept inside the White House by US President Theodore Roosevelt's daughter Alice?",
+    "real_answer": "snake"
   },
   {
     "id": 22,
-    "question": "What animal has no vocal cords but can communicate using low-frequency sounds?",
-    "real_answer": "Giraffe"
+    "question": "In which European capital city was the original world premiere of 'The Phantom of the Opera' stage musical held in 1986?",
+    "real_answer": "london"
   },
   {
     "id": 23,
-    "question": "What animal is known for throwing its intestines out of its body as a defense mechanism?",
-    "real_answer": "Sea cucumber"
+    "question": "Which animal was the first creature known to be sent to orbit Earth and survive the launch, aboard Sputnik 2?",
+    "real_answer": "dog"
   },
   {
     "id": 24,
-    "question": "What animal can survive for years without eating by slowing its metabolism dramatically?",
-    "real_answer": "Crocodile"
+    "question": "What species of bear served as the real-life historical inspiration behind the character of Winnie-the-Pooh?",
+    "real_answer": "black bear"
   },
   {
     "id": 25,
-    "question": "What animal's eyes can move independently of each other?",
-    "real_answer": "Chameleon"
-  },
-  {
-    "id": 26,
-    "question": "What animal can change both the color and texture of its skin to disguise itself?",
-    "real_answer": "Octopus"
-  },
-  {
-    "id": 27,
-    "question": "What bird lays eggs that are naturally dark green?",
-    "real_answer": "Emu"
-  },
-  {
-    "id": 28,
-    "question": "What animal is capable of seeing ultraviolet light that humans cannot see?",
-    "real_answer": "Reindeer"
-  },
-  {
-    "id": 29,
-    "question": "What animal's brain is shaped like a donut because its esophagus passes through it?",
-    "real_answer": "Octopus"
-  },
-  {
-    "id": 30,
-    "question": "What animal has a tongue that can extend nearly twice the length of its body?",
-    "real_answer": "Chameleon"
-  },
-  {
-    "id": 31,
-    "question": "What animal is known to use rocks as tools to crack open shellfish?",
-    "real_answer": "Sea otter"
-  },
-  {
-    "id": 32,
-    "question": "What animal can hold its breath for more than an hour while hunting underwater?",
-    "real_answer": "Sperm whale"
-  },
-  {
-    "id": 33,
-    "question": "What animal has ears that can help regulate its body temperature?",
-    "real_answer": "Elephant"
-  },
-  {
-    "id": 34,
-    "question": "What animal is known for pretending to be dead when threatened?",
-    "real_answer": "Opossum"
-  },
-  {
-    "id": 35,
-    "question": "What animal's blood is used to test medical equipment and vaccines for bacterial contamination?",
-    "real_answer": "Horseshoe crab"
-  },
-  {
-    "id": 36,
-    "question": "What animal has a stomach acid strong enough to dissolve bones?",
-    "real_answer": "Vulture"
-  },
-  {
-    "id": 37,
-    "question": "What animal can survive without oxygen for several hours by dramatically lowering its metabolism?",
-    "real_answer": "Naked mole-rat"
-  },
-  {
-    "id": 38,
-    "question": "What animal has rectangular pupils that help it see predators approaching from different directions?",
-    "real_answer": "Goat"
-  },
-  {
-    "id": 39,
-    "question": "What animal can regrow an entire body from a small piece of its original body?",
-    "real_answer": "Planarian"
-  },
-  {
-    "id": 40,
-    "question": "What animal has the ability to breathe through its skin as well as its lungs?",
-    "real_answer": "Frog"
-  },
-  {
-    "id": 41,
-    "question": "What animal's babies are born about the size of a grain of rice and finish developing inside a pouch?",
-    "real_answer": "Kangaroo"
-  },
-  {
-    "id": 42,
-    "question": "What animal can produce a sound louder than a gunshot by snapping part of its body underwater?",
-    "real_answer": "Mantis shrimp"
-  },
-  {
-    "id": 43,
-    "question": "What animal has a heart located near its head and can stop its heart while diving?",
-    "real_answer": "Octopus"
-  },
-  {
-    "id": 44,
-    "question": "What animal can communicate by changing the color patterns on its skin?",
-    "real_answer": "Cuttlefish"
-  },
-  {
-    "id": 45,
-    "question": "What animal's poop is used by some birds as nesting material because it helps keep parasites away?",
-    "real_answer": "Cattle"
-  },
-  {
-    "id": 46,
-    "question": "What animal can survive being decapitated for weeks because its body functions can continue without its head?",
-    "real_answer": "Cockroach"
-  },
-  {
-    "id": 47,
-    "question": "What animal has nostrils on top of its head so it can breathe while most of its body remains underwater?",
-    "real_answer": "Hippopotamus"
-  },
-  {
-    "id": 48,
-    "question": "What animal sleeps while holding hands with other members of its group so it does not drift away?",
-    "real_answer": "Sea otter"
-  },
-  {
-    "id": 49,
-    "question": "What animal has a bite so powerful that it can crush turtle shells?",
-    "real_answer": "Saltwater crocodile"
-  },
-  {
-    "id": 50,
-    "question": "What animal is the only mammal capable of true sustained powered flight?",
-    "real_answer": "Bat"
+    "question": "What classic toy was accidentally invented by naval engineer Richard James?",
+    "real_answer": "slinky"
   }
 ]
