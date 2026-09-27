@@ -1,14 +1,21 @@
 import { useState } from "react"
+import { TopNav } from "@/components/ui/TopNav"
 import { Button } from "@/components/ui/button"
 import { useGame } from "@/store/game"
+
+const animalImages: Record<string, string> = Object.fromEntries(
+  Object.entries(
+    import.meta.glob("@/assets/animals/*.{png,jpg,jpeg,webp}", { eager: true, import: "default" }) as Record<string, string>
+  ).map(([path, image]) => [path.split("/").pop() ?? path, image])
+)
 
 export function HostLobby() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { code, room, startGame } = useGame()
 
-  // Players come from the latest state:update broadcast
   const players = Object.values(room?.players ?? {})
+  const playerCount = Object.keys(room?.players ?? {}).length
 
   const onStart = async () => {
     setBusy(true)
@@ -22,33 +29,44 @@ export function HostLobby() {
     }
   }
 
+  const gridPlayers = Array.from({ length: 8 }, (_, index) => players[index] ?? null)
+
   return (
-    <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-4 px-4 py-6">
-      <p className="text-center text-sm text-muted-foreground">Join with room code</p>
-      <div className="text-center font-mono text-6xl font-black tracking-widest">{code}</div>
+    <div className="host-lobby-screen">
+      <TopNav leftText="HOST LOBBY" rightText={`${playerCount} OF 8 JOINED`} />
 
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium">Players</span>
-        <span className="text-muted-foreground">{players.length} joined</span>
-      </div>
+      <main className="host-lobby-main">
+        <div className="host-lobby-code-panel">
+          <div className="host-lobby-code-label">ROOM CODE:</div>
+          <div className="host-lobby-code-value">{code || "BLUFF 01"}</div>
+        </div>
 
-      {players.length === 0 ? (
-        <p className="rounded-lg border p-3 text-center text-sm text-muted-foreground">Waiting for players…</p>
-      ) : (
-        <ul className="divide-y rounded-lg border">
-          {players.map((p) => (
-            <li key={p.id} className="px-3 py-2 font-medium">
-              {p.name}
-            </li>
-          ))}
-        </ul>
-      )}
+        <div className="host-lobby-url">JOIN ON YOUR PHONE • BLUFFTRIVIA.com</div>
 
-      <Button size="lg" className="h-12 text-base" disabled={busy || players.length === 0} onClick={onStart}>
-        Start game
+        <div className="host-player-grid" aria-label="Players joined">
+          {gridPlayers.map((player, index) => {
+            const avatarSrc = player?.avatar ? animalImages[player.avatar] : null
+
+            return (
+              <div className="host-player-card" key={player?.id ?? `empty-${index}`}>
+                {player && (
+                  <div className="host-player-avatar">
+                    <img src={avatarSrc ?? ""} alt={player.name} className="host-player-image" />
+                  </div>
+                )}
+                <div className="host-player-name">{player?.name ?? ""}</div>
+              </div>
+            )
+          })}
+        </div>
+      </main>
+
+      <Button size="lg" className="host-lobby-start" disabled={busy || players.length === 0} onClick={onStart}>
+        <span className="host-lobby-start-icon">▶</span>
+        START GAME
       </Button>
 
-      {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+      {error && <p className="host-lobby-error">{error}</p>}
     </div>
   )
 }
