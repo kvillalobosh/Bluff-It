@@ -12,6 +12,14 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 # Wrap with ASGI application so Uvicorn can run it
 socket_app = socketio.ASGIApp(sio)
 
+# Phase lengths in seconds — used for both the client countdown (deadline) and the server timer.
+# Must match WRITE_SECONDS / VOTE_SECONDS in client/src/store/game.ts
+WRITE_SECONDS = 45
+VOTE_SECONDS = 30
+
+# Rounds per game — must match TOTAL_ROUNDS in client/src/store/game.ts
+TOTAL_ROUNDS = 5
+
 # a dictionary to hold all the active rooms
 # key: 4-letter room code
 # value: a dictionary full of room info
@@ -155,7 +163,7 @@ async def transition_to_vote(code: str):
 
     # 3. Store the public list (just strings or id/text pairs, NO player SIDs attached!)
     room["shuffled_choices"] = all_choices
-    room["deadline"] = time.time() + 30
+    room["deadline"] = time.time() + VOTE_SECONDS
 
     # 4. Broadcast the new voting phase and the options to everyone
     public_state = get_public_room_state(room)
@@ -164,7 +172,7 @@ async def transition_to_vote(code: str):
     # 5. Start the voting timer
     if room.get("timer_task"):
         room["timer_task"].cancel()
-    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=45))
+    room["timer_task"] = asyncio.create_task(vote_phase_timer(code, seconds=VOTE_SECONDS))
 
 # timer for question staging
 async def write_phase_timer(code: str, seconds: int = 45):
@@ -350,8 +358,8 @@ async def handle_start_question_staging(sid, data: dict):
     if room.get("timer_task"):
         room["timer_task"].cancel()
     # Start timer
-    room["deadline"] = time.time() + 45
-    room["timer_task"] = asyncio.create_task(write_phase_timer(code, seconds=45))
+    room["deadline"] = time.time() + WRITE_SECONDS
+    room["timer_task"] = asyncio.create_task(write_phase_timer(code, seconds=WRITE_SECONDS))
 
     # broadcast updated state to everyone in socket room
     public_state = get_public_room_state(room)
