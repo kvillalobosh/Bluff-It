@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { TopNav } from "@/components/ui/TopNav"
 import { Button } from "@/components/ui/button"
-import { useGame } from "@/store/game"
+import { DEMO_ROUNDS, TOTAL_ROUNDS, useGame } from "@/store/game"
 
 const animalImages: Record<string, string> = Object.fromEntries(
   Object.entries(
@@ -12,6 +12,7 @@ const animalImages: Record<string, string> = Object.fromEntries(
 export function HostLobby() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [demoMode, setDemoMode] = useState(false)
   const { code, room, startGame } = useGame()
 
   const players = Object.values(room?.players ?? {})
@@ -21,7 +22,7 @@ export function HostLobby() {
     setBusy(true)
     setError(null)
     try {
-      await startGame()
+      await startGame(demoMode ? DEMO_ROUNDS : TOTAL_ROUNDS)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -33,6 +34,15 @@ export function HostLobby() {
 
   return (
     <div className="host-lobby-screen">
+      <button
+        type="button"
+        className={`host-lobby-demo-toggle ${demoMode ? "host-lobby-demo-toggle--active" : ""}`}
+        onClick={() => setDemoMode((v) => !v)}
+        aria-pressed={demoMode}
+      >
+        {demoMode ? "demo mode: 2 rounds" : "demo mode: 5 rounds"}
+      </button>
+
       <TopNav leftText="HOST LOBBY" rightText={`${playerCount} OF 8 JOINED`} />
 
       <main className="host-lobby-main">

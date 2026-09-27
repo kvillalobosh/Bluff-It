@@ -10,6 +10,7 @@ export function QuestionVoting() {
   if (!room) return null
 
   const players = Object.values(room.players)
+  const totalRounds = room.max_rounds ?? TOTAL_ROUNDS
   const active = players.filter((p) => p.connected)
   const voted = active.filter((p) => p.has_voted).length
 
@@ -23,7 +24,7 @@ export function QuestionVoting() {
         <div className="question-voting-grid">
           <section className="question-voting-left-panel">
             <div className="question-voting-question-card">
-              <p className="question-voting-round-label">ROUND {room.round} OF {TOTAL_ROUNDS}</p>
+              <p className="question-voting-round-label">ROUND {room.round} OF {totalRounds}</p>
               <p className="question-voting-question">{room.question}</p>
             </div>
 
