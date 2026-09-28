@@ -1,127 +1,73 @@
 [
   {
     "id": 1,
+    "question": "$10 in 2026 is like how many dollars in 2016?",
+    "real_answer": "$7.19"
+  },
+  {
+    "id": 2,
+    "question": "What day does Canada celebrate their birthday?",
+    "real_answer": "July 1"
+  },
+  {
+    "id": 3,
+    "question": "In the Bible, how many of Elisha's miracles are recorded?",
+    "real_answer": "14"
+  },
+  {
+    "id": 4,
+    "question": "What country hosted the 2014 Winter Olympic Games?",
+    "real_answer": "Russia"
+  },
+  {
+    "id": 5,
+    "question": "Which city has the most expensive hotel suite in the US?",
+    "real_answer": "Las Vegas"
+  },
+  {
+    "id": 6,
+    "question": "What international event is celebrated every April 22nd?",
+    "real_answer": "Earth day"
+  },
+  {
+    "id": 7,
+    "question": "What constellation is the Big Dipper a part of?",
+    "real_answer": "ursa major"
+  },
+
+  {
+    "id": 8,
+    "question": "Which US state contains Fort Knox?",
+    "real_answer": "kentucky"
+  },
+  {
+    "id": 9,
+    "question": "What name was the state of Washington almost named?",
+    "real_answer": "Columbia"
+  },
+  {
+    "id": 10,
     "question": "What animal has fingerprints so similar to humans that they can potentially confuse forensic investigators?",
     "real_answer": "koala"
   },
   {
-    "id": 2,
-    "question": "What animal produces cube-shaped feces?",
-    "real_answer": "wombat"
-  },
-  {
-    "id": 3,
-    "question": "What animal can survive being frozen for months and then thaw out and continue living?",
-    "real_answer": "wood frog"
-  },
-  {
-    "id": 4,
-    "question": "What animal's heart can weigh more than 1,000 pounds?",
-    "real_answer": "blue whale"
-  },
-  {
-    "id": 5,
-    "question": "What animal can sleep with one half of its brain awake?",
-    "real_answer": "dolphin"
-  },
-  {
-    "id": 6,
-    "question": "What animal's milk has been described as naturally pink?",
-    "real_answer": "hippo"
-  },
-  {
-    "id": 7,
-    "question": "What bird lays eggs that are naturally dark green?",
-    "real_answer": "emu"
-  },
-  {
-    "id": 8,
-    "question": "What animal has a stomach acid strong enough to dissolve bones?",
-    "real_answer": "vulture"
-  },
-  {
-    "id": 9,
-    "question": "What animal's poop is used by some birds as nesting material because it helps keep parasites away?",
-    "real_answer": "cattle"
-  },
-  {
-    "id": 10,
-    "question": "What animal sleeps while holding hands with other members of its group so it does not drift away?",
-    "real_answer": "sea otter"
-  },
-  {
     "id": 11,
-    "question": "Which sovereign nation spans twelve distinct time zones, the most of any country in the world?",
-    "real_answer": "france"
+    "question": "How many pounds did Johnny Depp have to lose for the role of Edward Scissorhands?",
+    "real_answer": "25"
   },
   {
     "id": 12,
-    "question": "Which city hosted the very first performance of Ludwig van Beethoven's Ninth Symphony in 1824?",
-    "real_answer": "vienna"
+    "question": "What did ancient Egyptians use as pillows?",
+    "real_answer": "stone headrests"
   },
   {
     "id": 13,
-    "question": "Which European capital is the real-world birthplace of actor Keanu Reeves?",
-    "real_answer": "beirut"
+    "question": "What is the crescent-shaped part of a fingernail called?",
+    "real_answer": "lunula"
   },
   {
     "id": 14,
-    "question": "On which Apollo mission did an astronaut hit two golf balls on the surface of the Moon?",
-    "real_answer": "apollo 14"
-  },
-  {
-    "id": 15,
-    "question": "Which mammal was the first animal to successfully navigate the original Panama Canal on its opening transit in 1914?",
-    "real_answer": "dog"
-  },
-  {
-    "id": 16,
-    "question": "What instrument did Albert Einstein regularly play to help clear his mind while working through physics problems?",
-    "real_answer": "violin"
-  },
-  {
-    "id": 17,
-    "question": "Which animal was the first living vertebrate creature ever successfully genetically cloned?",
-    "real_answer": "sheep"
-  },
-  {
-    "id": 18,
-    "question": "Which board game was officially licensed by the British Secret Service during World War II to smuggle escape maps and compasses to POWs?",
-    "real_answer": "monopoly"
-  },
-  {
-    "id": 19,
-    "question": "What brand of soda sponsored the first commercial advertisement filmed in outer space aboard the Mir space station?",
-    "real_answer": "pepsi"
-  },
-  {
-    "id": 20,
-    "question": "Which international port was the original destination of the Titanic before it struck an iceberg on its maiden voyage?",
-    "real_answer": "new york"
-  },
-  {
-    "id": 21,
-    "question": "What kind of pet animal was famously kept inside the White House by US President Theodore Roosevelt's daughter Alice?",
-    "real_answer": "snake"
-  },
-  {
-    "id": 22,
-    "question": "In which European capital city was the original world premiere of 'The Phantom of the Opera' stage musical held in 1986?",
-    "real_answer": "london"
-  },
-  {
-    "id": 23,
-    "question": "Which animal was the first creature known to be sent to orbit Earth and survive the launch, aboard Sputnik 2?",
-    "real_answer": "dog"
-  },
-  {
-    "id": 24,
-    "question": "What species of bear served as the real-life historical inspiration behind the character of Winnie-the-Pooh?",
-    "real_answer": "black bear"
-  },
-  {
-    "id": 25,
-    "question": "What classic toy was accidentally invented by naval engineer Richard James?",
-    "real_answer": "slinky"
+    "question": "What is Tiger Wood's real first name?",
+    "real_answer": "Eldrick"
   }
 ]

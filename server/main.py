@@ -4,7 +4,7 @@ import secrets
 import string
 import uuid
 import socketio
-from questions import get_random_question
+from questions import ALL_QUESTIONS, get_random_question
 import asyncio
 import time
 
@@ -268,7 +268,8 @@ async def handle_create_room(sid):
         "round_votes": {},
         "shuffled_choices": [],
         "answer_choice_ids": {},
-        "raw_choices": []
+        "raw_choices": [],
+        "used_question_ids": set(),
     }
 
     print(f"Room {code} created successfully by host {sid}")
@@ -399,7 +400,13 @@ async def handle_start_question_staging(sid, data: dict):
 
     # update phase and pick question
     room["phase"] = "question_staging"
-    room["current_question"] = get_random_question()
+    used_ids = set(room.get("used_question_ids", set()))
+    if len(used_ids) >= len(ALL_QUESTIONS):
+        used_ids = set()
+    room["current_question"] = get_random_question(excluded_ids=used_ids)
+    if room["current_question"]:
+        used_ids.add(room["current_question"]["id"])
+        room["used_question_ids"] = used_ids
     room["round_answers"] = {}
     room["round_votes"] = {}
     room["answer_choice_ids"] = {}
@@ -533,6 +540,8 @@ async def handle_start_next_round(sid, data:dict):
         room["shuffled_choices"] = []
         room["answer_choice_ids"] = {}
         room["raw_choices"] = []
+        if len(room.get("used_question_ids", set())) >= len(ALL_QUESTIONS):
+            room["used_question_ids"] = set()
 
     # broadcast updated state
     public_state = get_public_room_state(room)
